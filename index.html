@@ -1,0 +1,844 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#101827"><title>SocialBase Premium — Feed e Voz</title>
+<link href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
+<style>
+:root{font-family:system-ui,-apple-system,'Segoe UI',sans-serif;color:#17382a;background:#edf3ef}*{box-sizing:border-box}body{margin:0}button,input,textarea{font:inherit}button{cursor:pointer;border:0;border-radius:10px;padding:11px 13px;font-weight:700}button:disabled{opacity:.55;cursor:wait}.primary{background:#1e9953;color:white}.secondary{background:#e4eee7;color:#17422d}.danger{background:#fce3e3;color:#a42020}.ghost{background:transparent;color:inherit}.shell{max-width:1150px;margin:auto;padding:16px}.brand{font-size:28px;letter-spacing:3px;font-weight:900;color:#176e40}.brand small{display:block;font-size:11px;letter-spacing:1px;color:#71867a}.card{background:white;border:1px solid #dce8df;border-radius:17px;padding:18px;box-shadow:0 5px 20px #143b2510}.auth{max-width:440px;margin:8vh auto}.stack{display:grid;gap:12px}.row{display:flex;align-items:center;gap:9px;flex-wrap:wrap}.between{justify-content:space-between}input,textarea{width:100%;border:1px solid #cddcd1;border-radius:10px;padding:12px;background:white;color:#153b27}textarea{min-height:90px;resize:vertical}label{font-size:13px;font-weight:700}h1,h2,h3,p{margin:0}h2{font-size:19px}h3{font-size:16px}p{line-height:1.5}small,.muted{color:#698273}.hidden{display:none!important}.tabs{display:flex;gap:7px;flex-wrap:wrap;margin:14px 0}.tabs button{background:#e0e9e3;color:#234b33}.tabs button.active{background:#176e40;color:white}.grid{display:grid;grid-template-columns:1.5fr 1fr;gap:14px}.map{height:530px;border-radius:13px;overflow:hidden;background:#dbe9df}.panel{display:grid;gap:12px;align-content:start}.list{display:grid;gap:8px}.person{display:flex;gap:10px;align-items:center;padding:11px;border:1px solid #e2eae4;border-radius:11px}.avatar{width:42px;height:42px;border-radius:50%;object-fit:cover;background:#d4e9da;display:grid;place-items:center;font-weight:900;flex:none}.person .info{flex:1;min-width:0}.person .info strong{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.person .actions{display:flex;gap:5px;flex-wrap:wrap;justify-content:flex-end}.person button{padding:8px;font-size:12px}.status{font-size:12px;padding:6px 9px;border-radius:99px;background:#e4ece6}.status.online{background:#d6f5df;color:#11763a}.notice{padding:12px;border-radius:10px;background:#f0f7f2;font-size:13px}.error{background:#ffeded;color:#a22222}.chatlog{height:380px;overflow:auto;background:#f4f8f5;padding:12px;border-radius:12px;display:flex;flex-direction:column;gap:9px}.bubble{max-width:83%;align-self:flex-start;background:white;padding:10px;border-radius:12px;overflow-wrap:anywhere}.bubble.mine{align-self:flex-end;background:#d6f5df}.bubble time{display:block;text-align:right;color:#7d8c82;font-size:10px;margin-top:4px}.bubble img{max-width:230px;max-height:250px;border-radius:8px;display:block}.photo{width:90px;height:90px;object-fit:cover;border-radius:10px}.pill{background:#e7f0e9;border-radius:20px;padding:5px 10px;font-size:12px}#toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#173c2a;color:white;padding:13px 18px;border-radius:11px;z-index:10000;max-width:90%;box-shadow:0 6px 24px #0003}.maplibregl-popup-content{border-radius:12px}.subhead{margin-bottom:12px}a{color:#176e40}@media(max-width:760px){.shell{padding:10px}.grid{grid-template-columns:1fr}.map{height:52vh;min-height:310px}.card{padding:13px}.person{align-items:flex-start}.person .actions{max-width:135px}.tabs button{font-size:12px;padding:10px}.auth{margin:4vh auto}}
+
+/* Visualizador de fotos do SocialBase */
+.photo-trigger,.avatar-trigger{border:0;background:transparent;padding:0;cursor:zoom-in;display:inline-flex;align-items:center;justify-content:center}
+.avatar-trigger{border-radius:50%;flex:none}.photo-trigger:focus-visible,.avatar-trigger:focus-visible{outline:3px solid #22b76a;outline-offset:3px}
+#photoViewer{position:fixed;inset:0;z-index:20000;background:rgba(6,16,12,.96);color:white;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:14px;gap:10px}
+#photoViewer.hidden{display:none!important}#photoViewer .viewer-top{width:min(100%,900px);display:flex;align-items:center;justify-content:space-between;gap:12px}
+#photoViewer .viewer-main{width:min(100%,900px);flex:1;min-height:0;display:flex;align-items:center;justify-content:space-between;gap:8px;touch-action:pan-y}
+#photoViewer .viewer-main img{max-width:calc(100% - 98px);max-height:100%;width:auto;height:auto;object-fit:contain;border-radius:10px}
+#photoViewer button{background:#ffffff26;color:white;border:1px solid #ffffff35}#photoViewer button:disabled{opacity:.25}
+#photoViewer .viewer-thumbs{display:flex;gap:8px;max-width:100%;overflow-x:auto;padding:5px 0 10px}
+#photoViewer .viewer-thumbs button{padding:2px;border:2px solid transparent;border-radius:9px}
+#photoViewer .viewer-thumbs button.selected{border-color:#39d989}#photoViewer .viewer-thumbs img{width:50px;height:50px;object-fit:cover;border-radius:6px;display:block}
+#photoViewer .viewer-prev,#photoViewer .viewer-next{font-size:24px;min-width:43px;min-height:48px}
+@media(max-width:600px){#photoViewer{padding:10px}#photoViewer .viewer-main img{max-width:calc(100% - 80px)}#photoViewer .viewer-prev,#photoViewer .viewer-next{min-width:35px;padding:8px}}
+
+/* SocialBase: identidade própria azul-claro; chat verde estilo WhatsApp */
+:root{color:#233e5b;background:#eaf5ff}body{background:linear-gradient(160deg,#e7f4ff,#f7fbff 65%);color:#233e5b}.brand{color:#2563a7;letter-spacing:.5px}.brand small{color:#6d92b4}.card{border-color:#d7e8f8;box-shadow:0 5px 18px #2a649012}.primary{background:#2877bc}.secondary{background:#e6f2ff;color:#225e91}.tabs button{background:#dceeff;color:#2c6599}.tabs button.active{background:#2877bc}.notice{background:#eaf5ff}.pill{background:#e2f0ff}.status.online{background:#def8e8;color:#087846}.profile-cover{height:165px;border-radius:15px;background:linear-gradient(125deg,#a9d8ff,#dcefff 60%,#8cbef0);position:relative;overflow:hidden}.profile-cover:after{content:'✦  SocialBase  ✦';position:absolute;right:22px;top:28px;color:#ffffffb0;font-size:26px;font-weight:800}.profile-head{display:flex;gap:16px;align-items:center;margin-top:-40px;position:relative;padding:0 16px 10px;flex-wrap:wrap}.profile-head .avatar,.profile-head .avatar-trigger,.profile-head .avatar-trigger .avatar{width:95px;height:95px;border:4px solid white;font-size:40px}.profile-head-text{flex:1;min-width:180px;padding-top:38px}.profile-head-text h2{font-size:24px}.profile-columns{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:13px}.profile-section{border:1px solid #d8e8f8;border-radius:13px;background:#fff;padding:15px;min-width:0}.profile-section h3{color:#246ba8;margin-bottom:11px}.profile-mini-nav{display:flex;gap:7px;flex-wrap:wrap;margin:6px 0 14px}.profile-mini-nav button{background:#e6f2ff;color:#225e91;padding:9px}.profile-mini-nav button.selected{background:#2877bc;color:#fff}.profile-detail{display:flex;gap:8px;border-bottom:1px solid #eaf1f8;padding:8px 0;align-items:baseline}.profile-detail b{min-width:98px}.sb-feed{display:grid;gap:9px}.sb-entry{border-bottom:1px solid #e6eef7;padding:8px 0;overflow-wrap:anywhere}.sb-entry .meta{font-size:12px;color:#6584a1;margin-bottom:4px}.sb-entry p{white-space:pre-wrap}.sb-photo-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}.sb-photo-grid img{width:100%;height:96px;object-fit:cover;border-radius:9px}.sb-profile-form{display:flex;gap:8px;align-items:start}.sb-profile-form textarea{min-height:66px;flex:1}.sb-profile-form button{flex:none}.sb-community{padding:11px;border:1px solid #e1edf9;border-radius:11px;display:flex;gap:8px;align-items:center;justify-content:space-between}.sb-community .info{flex:1;min-width:0}.sb-community strong{display:block}.sb-community small{display:block}.sb-friend-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}.sb-friend-grid .avatar,.sb-friend-grid .avatar-trigger,.sb-friend-grid .avatar-trigger .avatar{width:56px;height:56px}.sb-friend-grid>div{font-size:11px;text-align:center;overflow-wrap:anywhere}.sb-profile-edit{display:grid;gap:9px}.sb-profile-edit label{display:block;margin-top:4px}.chatlog{background:#e7efea;background-image:radial-gradient(#d3e0d7 1px,transparent 1px);background-size:22px 22px}.bubble{background:white;box-shadow:0 1px 2px #0002}.bubble.mine{background:#d9fdd3}.bubble time{color:#6b8374}#view-conversas .card{border-color:#dce8df}#view-conversas #chatTitle{color:#185f42}#view-conversas #sendMessage{background:#138d53}#view-conversas #chatText{background:#fff;border-radius:18px}.sb-chat-image{max-width:220px;max-height:260px;object-fit:contain;border-radius:9px;cursor:zoom-in}.sb-chat-img-placeholder{font-size:12px;color:#8c3e30}.sb-modal{border:0;border-radius:16px;max-width:min(94vw,650px);width:100%;padding:18px;box-shadow:0 15px 65px #0005;color:#233e5b}.sb-modal::backdrop{background:#0e243c9c}@media(max-width:760px){.profile-columns{grid-template-columns:1fr}.profile-cover{height:115px}.profile-head .avatar,.profile-head .avatar-trigger,.profile-head .avatar-trigger .avatar{width:76px;height:76px}.profile-head-text{padding-top:25px}.profile-head-text h2{font-size:20px}.sb-profile-form{flex-wrap:wrap}.sb-profile-form textarea{flex-basis:100%}.sb-photo-grid img{height:82px}}
+
+/* Perfil mobile SocialBase — referência azul-claro, layout original */
+:root{font-family:Inter,system-ui,-apple-system,'Segoe UI',sans-serif;color:#1c3065;background:#eaf3ff}
+body{background:linear-gradient(155deg,#d8eaff,#f4f8ff 60%);color:#1c3065}
+.brand{color:#3925a4;font-style:italic;letter-spacing:-.8px}.brand small{font-style:normal}
+#view-perfil>.card{max-width:900px;margin:auto;padding:10px;background:#e6f2ff;border:1px solid #b9d9ff}
+.profile-cover{height:175px;background:linear-gradient(115deg,#b5a6f9,#78b8ff 55%,#f3b6d4);background-position:center;background-size:cover}
+.profile-cover:after{display:none}.sb-cover-edit{position:absolute;bottom:9px;right:9px;background:#fffdf5ed;color:#5334b8;padding:7px 10px;font-size:11px}
+.profile-head{background:#ffffffd9;border-radius:0 0 14px 14px;padding:0 12px 12px;margin-bottom:8px}
+.profile-head-text h2{font-size:24px;color:#172f65}.profile-head-text p{font-size:12px}
+#sbEditToggle{background:white;color:#6733c6;border:1px solid #b9a2f2;padding:9px}
+.sb-stat-row{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin:9px 0}
+.sb-stat-row button{background:#fff;border:1px solid #d2e2fb;border-radius:12px;padding:7px;display:flex;flex-direction:column;align-items:center;gap:1px;color:#5830c7}
+.sb-stat-row strong{font-size:17px}.sb-stat-row small{font-size:10px;color:#6a77a4}
+.profile-mini-nav{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:3px;flex-wrap:nowrap;margin:8px 0}
+.profile-mini-nav button{display:flex;flex-direction:column;gap:3px;align-items:center;justify-content:center;min-width:0;background:transparent;color:#334777;padding:7px 2px;font-size:22px;font-weight:500;border-radius:10px}
+.profile-mini-nav button small{font-size:10px;letter-spacing:-.3px}.profile-mini-nav button.selected{background:#8752e8;color:white}
+.profile-columns{grid-template-columns:1fr;gap:9px}
+.profile-columns>.stack{display:contents}
+.profile-section{padding:12px;border:1px solid #cddff8;background:#fff;border-radius:12px}
+.profile-section h3{color:#2a377c;font-size:15px;margin:0}
+#sbSobre{order:1}#sbFotos{order:2}#sbRecados{order:3}#sbComunidades{order:4}#sbAmigos{order:5}#sbDepoimentos{order:6}
+#sbAboutInfo .profile-detail{padding:6px 0;font-size:12px}
+.sb-link{background:transparent;color:#7741d9;font-size:11px;padding:3px}
+.sb-photo-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:5px}
+.sb-photo-grid img{width:100%;height:75px;object-fit:cover;border-radius:9px}
+#sbMyFriends{grid-template-columns:repeat(5,minmax(0,1fr))}
+#view-conversas .chatlog{background:#e7efea;min-height:300px}
+#view-conversas .bubble.mine{background:#d9fdd3}
+#tabs{position:sticky;bottom:0;z-index:200;background:#ffffffed;border:1px solid #d7e5fb;box-shadow:0 -5px 20px #26377d20;border-radius:16px;display:flex;justify-content:space-around;gap:2px;padding:6px;margin-top:18px}
+#tabs button{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;min-width:0;padding:5px 3px;font-size:21px;background:transparent;color:#445b8b}
+#tabs button small{font-size:10px;font-weight:600}#tabs button.active{background:#e7dfff;color:#7d37e2}
+@media(max-width:760px){
+ .shell{padding:6px 7px 85px;max-width:480px}
+ header{padding:6px 5px}header .brand{font-size:24px}header .brand small{font-size:9px}
+ #userBadge{display:none!important}
+ #tabs{position:fixed;left:8px;right:8px;bottom:env(safe-area-inset-bottom,8px);margin:0;padding:5px;max-width:470px;margin-inline:auto}
+ .profile-cover{height:130px}
+ .profile-head{margin-top:-32px;gap:8px;align-items:center}
+ .profile-head .avatar,.profile-head .avatar-trigger,.profile-head .avatar-trigger .avatar{width:70px;height:70px}
+ .profile-head-text{padding-top:26px;min-width:125px}.profile-head-text h2{font-size:19px}
+ #sbEditToggle{font-size:10px;padding:7px}
+ .profile-mini-nav button{font-size:18px}.profile-mini-nav button small{font-size:9px}
+ .sb-photo-grid img{height:57px}
+ #view-conversas .grid{display:flex;flex-direction:column}
+ #view-conversas .chatlog{height:48vh}
+}
+
+.sb-other-cover{height:120px;margin-bottom:10px;background-size:cover;background-position:center}.sb-other-head{margin-top:-38px;position:relative;padding:0 12px 10px;background:#ffffffc9;border-radius:12px}.sb-other-head .avatar{width:70px;height:70px;border:3px solid white}
+
+/* Correção responsiva dos atalhos no perfil de outras pessoas */
+#sbOtherContent{min-width:0;overflow-wrap:anywhere}
+#sbOtherContent .sb-other-jump{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:10px!important;width:100%;margin:14px 0 18px}
+#sbOtherContent .sb-other-jump button{width:100%;min-width:0;max-width:100%;min-height:58px;display:flex;align-items:center;justify-content:center;gap:6px;flex-direction:column;white-space:normal;overflow-wrap:anywhere;word-break:normal;line-height:1.25;text-align:center;padding:10px 6px;font-size:13px;background:#edf3ff;color:#283f81;border:1px solid #d8e4fa;border-radius:12px}
+#sbOtherContent .sb-other-jump button span:first-child{font-size:21px;line-height:1.1}
+#sbOtherContent .sb-other-actions{display:flex;flex-wrap:wrap;gap:9px;margin:8px 0}
+#sbOtherContent .sb-other-actions button{max-width:100%;white-space:normal}
+@media(max-width:420px){#sbOtherContent .sb-other-jump{gap:7px!important}#sbOtherContent .sb-other-jump button{font-size:12px;padding:8px 4px}.sb-modal{padding:13px}}
+/* Controles de mídia do chat: visíveis e adequados ao celular */
+.sb-media-actions{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.sb-media-actions button{background:#e5f2ff;color:#245e94;border:1px solid #c6e0f7;white-space:nowrap}
+#chatForm>.row{align-items:center;gap:9px}
+@media(max-width:760px){#chatForm>.row{display:grid;grid-template-columns:1fr 1fr;gap:8px}.sb-media-actions{grid-column:1/-1;display:grid;grid-template-columns:1fr 1fr}.sb-media-actions button{width:100%}#sendMessage{grid-column:1/-1}#deleteChat{grid-column:1/-1;justify-self:start}}
+
+/* Comunidades: capa, tópicos e respostas */
+.sb-community-cover{height:150px;border-radius:13px;background:linear-gradient(110deg,#9fc9ff,#c9b6f7);background-position:center;background-size:cover;margin-bottom:12px}
+.sb-topic{border:1px solid #d8e5f8;border-radius:12px;padding:12px;margin:9px 0;background:#fff}
+.sb-topic h3{margin:0 0 5px}.sb-topic p{white-space:pre-wrap;overflow-wrap:anywhere}.sb-reply{padding:9px 0;border-top:1px solid #e6edf8;white-space:pre-wrap;overflow-wrap:anywhere}
+.sb-topic small,.sb-reply small{display:block;color:#667b98;margin-bottom:5px}
+#sbCommunityDialog{max-height:90dvh;overflow:auto}
+
+/* SocialBase Premium Feed */
+:root{--sb-ink:#101c44;--sb-violet:#7043e7;--sb-sky:#e8f1ff}
+body{background:linear-gradient(145deg,#dceaff,#f4f7ff)!important;color:#172b55}
+.brand{color:#32269b!important;letter-spacing:-1.2px!important;font-weight:900}
+.card{border:1px solid #d3def9!important;border-radius:22px!important;box-shadow:0 12px 30px #20387510!important}
+.primary{background:linear-gradient(115deg,#6034d8,#8d54f4)!important;color:#fff!important}
+.secondary{background:#e9edff!important;color:#342c86!important}
+.tabs{background:#fff!important;box-shadow:0 -6px 22px #273f771c!important}
+#view-feed{padding:12px 0 90px;max-width:760px;margin:auto}
+.sb-feed-head{background:linear-gradient(125deg,#101c44,#213d87);color:#fff;padding:19px;border-radius:23px;margin-bottom:14px}
+.sb-feed-head h2{font-size:23px;margin:0 0 5px}
+.sb-feed-pills{display:flex;gap:7px;overflow-x:auto;padding:11px 0}
+.sb-feed-pills button{white-space:nowrap;background:#ffffff20;color:white;border:1px solid #ffffff35;border-radius:22px}
+.sb-feed-pills button.selected{background:linear-gradient(110deg,#7542ec,#a05aff)}
+.sb-feed-card{background:#fff;border:1px solid #d7e3fa;border-radius:20px;padding:16px;margin-bottom:14px;box-shadow:0 8px 24px #1b3c7810}
+.sb-feed-card textarea{min-height:86px}
+.sb-feed-author{display:flex;align-items:center;gap:10px;margin-bottom:12px}
+.sb-feed-avatar{height:42px;width:42px;border-radius:50%;object-fit:cover;background:#e5eaff}
+.sb-feed-photo{width:100%;max-height:480px;object-fit:contain;background:#edf2fc;border-radius:13px;margin-top:12px}
+.sb-feed-actions{display:flex;gap:10px;align-items:center;margin-top:12px;flex-wrap:wrap}
+.sb-feed-actions button{background:#f0f2ff;color:#443b96}
+.sb-feed-meta{font-size:12px;color:#667795}
+.sb-feed-comment{padding:8px 0;border-bottom:1px solid #e9edfa;font-size:14px}
+.sb-feed-commentbox{display:flex;gap:7px;margin-top:10px}
+.sb-feed-commentbox input{flex:1;min-width:0}
+@media(max-width:540px){#view-feed{padding:7px 0 90px}.sb-feed-card{padding:13px}.sb-feed-head{padding:15px}}
+
+/* SocialBase Premium — visual e salas de voz */
+:root{--sb-navy:#101827;--sb-violet:#8b5cf6;--sb-cyan:#22d3ee}
+body{background:linear-gradient(145deg,#101827,#182b59 60%,#111a36);color:#e9f0ff}
+.brand{color:#f8faff;letter-spacing:-1px}.brand small{color:#9bc0e8;letter-spacing:1px}
+.card,.profile-section,.sb-feed-card{background:#f8faff;color:#17264c;border:1px solid #dbe5ff;box-shadow:0 12px 35px #080f2e25}
+.primary,.tabs button.active{background:linear-gradient(115deg,#7542ec,#8b5cf6);color:white}
+.secondary{background:#e8edff;color:#253f7b}.tabs{background:#f8faffee;backdrop-filter:blur(15px);border:1px solid #c8d8ff}
+.sb-voice-hero{background:linear-gradient(120deg,#202765,#733ce6 75%,#157baf);color:#fff;border-radius:20px;padding:20px;margin:12px 0}
+.sb-voice-hero button{background:#fff;color:#5130ab}.sb-room{background:#fff;color:#192b52;border-radius:15px;padding:14px;margin:10px 0;display:flex;justify-content:space-between;gap:10px;align-items:center}
+.sb-voice-panel{max-width:760px;margin:auto}.sb-voice-participants{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:12px;margin:18px 0}.sb-voice-person{padding:15px;border-radius:18px;text-align:center;background:#202c53;border:1px solid #52638b;color:#fff}.sb-voice-avatar{width:64px;height:64px;border-radius:50%;background:#6542b8;display:grid;place-items:center;margin:0 auto 9px;font-size:26px}
+
+/* SocialBase Premium v2: identidade visual unificada (substitui estilos antigos) */
+:root{color-scheme:dark;--sb-bg:#0c1530;--sb-panel:#132349;--sb-ink:#f4f7ff;--sb-accent:#8b5cf6;--sb-cyan:#22d3ee}
+html,body{min-height:100%;background:#0c1530!important;color:#f4f7ff!important}
+body{background:radial-gradient(circle at 85% 0%,#243f83 0,transparent 38%),linear-gradient(155deg,#0b1430 0%,#12275a 62%,#0b1735 100%) fixed!important}
+.shell{max-width:1180px}
+.shell>header{padding:13px 16px 17px;margin-bottom:12px;border-radius:0 0 22px 22px;background:linear-gradient(120deg,#0d1b43,#182c62);box-shadow:0 8px 30px #03091c40}
+.shell>header .brand{color:#f8faff!important;letter-spacing:-.8px!important;font-size:30px!important;font-weight:850!important}
+.shell>header .brand small{color:#9eddf5!important;letter-spacing:1.8px!important}
+#app .tabs{position:sticky;top:0;z-index:80;display:flex!important;flex-wrap:nowrap!important;overflow-x:auto;scrollbar-width:thin;gap:5px;padding:8px!important;margin:8px 0 18px!important;background:#172854ee!important;border:1px solid #3a4d87!important;border-radius:19px!important;box-shadow:0 8px 24px #050d2780!important}
+#app .tabs button{flex:1 0 64px;min-width:64px;padding:10px 6px!important;background:transparent!important;color:#b8c9f1!important;border-radius:13px!important;font-size:20px!important;line-height:1.1}
+#app .tabs button small{display:block!important;color:inherit!important;font-size:10px!important;margin-top:4px!important;font-weight:650}
+#app .tabs button.active{background:linear-gradient(125deg,#6339d7,#955af6)!important;color:white!important;box-shadow:0 5px 15px #7239ee65!important}
+#app .card,#app .profile-section,#app .sb-feed-card,#app .sb-room{background:#f8faff!important;color:#1a2d55!important;border:1px solid #dbe5ff!important;box-shadow:0 9px 26px #00000022!important;border-radius:19px!important}
+#app .card h2,#app .card h3,#app .profile-section h3{color:#1e336a!important}
+#app .primary,#app button.primary{background:linear-gradient(115deg,#6237d5,#9258f4)!important;color:white!important;box-shadow:0 3px 12px #7749df30}
+#app .secondary,#app button.secondary{background:#e8edff!important;color:#293f82!important}
+#app .profile-mini-nav button.selected{background:linear-gradient(115deg,#6237d5,#9258f4)!important;color:#fff!important}
+#app .profile-mini-nav button{background:#e7edff!important;color:#2a3f80!important}
+#app .profile-cover{background:linear-gradient(120deg,#172b66,#7146df 65%,#0ba5c6)!important}
+#app .profile-cover:after{color:#ffffffb0!important}
+#app .profile-head-text h2{color:#f5f7ff!important;text-shadow:0 2px 7px #0c1734}
+#app .sb-feed-head{background:linear-gradient(135deg,#172a64,#362578 75%,#0d6385)!important;border:1px solid #5d63b5!important;box-shadow:0 15px 35px #02081955!important}
+#app .sb-feed-head h2{font-size:26px!important;color:#fff!important}
+#app .sb-feed-pills button{color:#fff!important;background:#ffffff20!important}
+#app .sb-feed-pills button.selected{background:linear-gradient(115deg,#6b41df,#9b5cf5)!important}
+#app .sb-feed-card{margin-bottom:14px!important}
+#app .sb-feed-card strong{color:#1c326b!important}
+#app .sb-feed-card textarea,#app .sb-feed-card input{background:#eef3ff!important;color:#1d3059!important;border:1px solid #ccd8f7!important}
+#app .sb-feed-actions button{background:#e8edff!important;color:#4934a6!important}
+#app .sb-voice-hero{background:linear-gradient(115deg,#242b74,#7237e2 70%,#087ca8)!important;border:1px solid #6b65c7!important;box-shadow:0 10px 28px #03091b55!important}
+#app .sb-voice-hero h2{color:#fff!important}
+#app .sb-voice-hero button{background:#f9f9ff!important;color:#5535a6!important}
+#app .muted{color:#6c80a0}
+#app .map{background:#1a3155!important}
+#app .chatlog{color:#1a2c4d}
+#app #view-feed{display:block;max-width:790px;margin:auto;padding-bottom:110px}
+#app #view-feed.hidden{display:none!important}
+#app #view-voz{padding-bottom:110px}
+@media(max-width:600px){.shell{padding:8px!important}.shell>header{padding:11px 12px!important}.shell>header .brand{font-size:26px!important}#app .tabs{gap:2px!important}#app .tabs button{min-width:61px!important;flex-basis:61px!important;font-size:18px!important}#app .sb-feed-head{padding:16px!important}}
+
+#sbProfileDialog{width:min(94vw,720px)!important;max-height:88dvh!important;overflow-y:auto!important;box-sizing:border-box!important}#sbProfileDialog .sb-other-cover{min-height:150px!important;height:170px!important}#sbOtherContent .sb-feed-card{margin:10px 0!important}#sbOtherContent .sb-photo-grid{display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:8px!important}#sbOtherContent .sb-photo-grid img{width:100%!important;height:105px!important;object-fit:cover!important}#sbOtherContent .sb-other-head{display:flex!important;align-items:center!important;flex-wrap:wrap!important}#sbOtherContent .sb-other-jump{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:8px!important}
+
+/* Correção definitiva da barra de navegação para smartphones. */
+@media (max-width:760px){
+  html,body{max-width:100%;overflow-x:hidden}
+  #app{min-width:0;max-width:100%}
+  #app #tabs{position:fixed!important;top:auto!important;bottom:0!important;left:0!important;right:0!important;width:100%!important;max-width:100%!important;height:calc(68px + env(safe-area-inset-bottom,0px))!important;min-height:68px!important;max-height:calc(68px + env(safe-area-inset-bottom,0px))!important;margin:0!important;padding:5px 5px calc(5px + env(safe-area-inset-bottom,0px))!important;display:flex!important;flex-direction:row!important;flex-wrap:nowrap!important;align-items:center!important;justify-content:flex-start!important;gap:2px!important;overflow-x:auto!important;overflow-y:hidden!important;scrollbar-width:none!important;border-radius:15px 15px 0 0!important;box-sizing:border-box!important}
+  #app #tabs::-webkit-scrollbar{display:none}
+  #app #tabs button,#app #tabs button.active{position:relative!important;display:flex!important;flex-direction:column!important;align-items:center!important;justify-content:center!important;align-self:center!important;flex:0 0 65px!important;width:65px!important;min-width:65px!important;max-width:65px!important;height:54px!important;min-height:54px!important;max-height:54px!important;margin:0!important;padding:4px 2px!important;line-height:1.1!important;font-size:19px!important;border-radius:12px!important;white-space:nowrap!important;overflow:hidden!important}
+  #app #tabs button small{display:block!important;font-size:10px!important;line-height:13px!important;max-height:13px!important}
+  .shell{padding-bottom:85px!important}
+}
+</style>
+<style>
+/* SocialBase Premium 2026 — identidade visual escolhida pelo proprietário */
+:root{--sb-night:#0b1532;--sb-panel:#14254e;--sb-purple:#8b5cf6;--sb-cyan:#22d3ee;--sb-ink:#f8faff;color-scheme:dark!important;background:#08122c!important;color:#f8faff!important}
+html,body{background:radial-gradient(circle at 85% 0%,#263f85 0%,#101d43 28%,#09142f 65%,#070f24 100%) fixed!important;color:#f8faff!important;font-family:Inter,system-ui,-apple-system,'Segoe UI',sans-serif!important}
+.shell{max-width:1120px}.brand{color:#fff!important;font-style:normal!important;font-weight:850!important;letter-spacing:-1px!important;font-size:27px!important}.brand small{color:#86bde9!important;letter-spacing:1.5px!important}
+header.row.between{background:linear-gradient(115deg,#101d47,#101c3e)!important;border:1px solid #4968ac55;border-radius:22px;padding:14px!important;margin-bottom:12px}
+.card,.profile-section,.sb-feed-card,#view-perfil>.card,.sb-modal,.sb-voice-panel .card{background:linear-gradient(145deg,#142650,#0e1c3c)!important;border:1px solid #425a92!important;color:#f6f8ff!important;border-radius:20px!important;box-shadow:0 10px 30px #0003!important}
+.card h2,.card h3,.profile-section h3,.profile-head-text h2,.sb-modal h2,.sb-modal h3,.sb-feed-card strong{color:#f9fbff!important}
+.muted,.sb-feed-meta,.sb-entry .meta,.profile-head-text p{color:#aebfe3!important}
+.primary,#sbVoiceCreate,.sb-feed-pills button.selected,.profile-mini-nav button.selected,.tabs button.active{background:linear-gradient(125deg,#a15bff,#6935e4)!important;color:#fff!important;border:1px solid #c2a5ff66!important;box-shadow:0 5px 18px #8b5cf64d!important}
+.secondary,.tabs button,.sb-feed-actions button,.sb-stat-row button,.profile-mini-nav button,.sb-other-jump button{background:#1c315d!important;color:#e7eeff!important;border:1px solid #5269a0!important}
+button{transition:filter .15s ease,transform .15s ease}button:active{transform:scale(.98)}
+input,textarea,select{background:#111f40!important;color:#fff!important;border:1px solid #5a6f9c!important;border-radius:13px!important}input::placeholder,textarea::placeholder{color:#9cadce!important}
+.tabs{background:#0c1938!important;border:1px solid #38528d!important;border-radius:22px!important;box-shadow:0 -4px 25px #0004!important}.tabs button{background:transparent!important;border:0!important;color:#bdcbee!important}.tabs button.active{background:linear-gradient(125deg,#9854f7,#6337d6)!important;color:white!important}
+.sb-feed-head,.sb-voice-hero{background:linear-gradient(125deg,#15295d,#1b205b 55%,#412184)!important;border:1px solid #5268a4!important;border-radius:24px!important;box-shadow:inset 0 0 35px #22d3ee12!important}
+.sb-feed-pills button{background:#23365f!important;color:#e8edff!important;border:1px solid #4b6497!important}.sb-feed-card{padding:17px!important}.sb-feed-photo{background:#102042!important;border-radius:16px!important;max-height:430px!important}.sb-feed-comment{border-color:#344a7d!important}
+.profile-cover{height:180px!important;background:linear-gradient(110deg,#243d9b,#7260f4 52%,#22c8e5)!important;border-radius:20px 20px 0 0!important}.profile-head{background:#112147!important;border-radius:0 0 20px 20px!important;padding:12px 16px 16px!important;margin-top:-35px!important}.profile-head-text h2{font-size:24px!important}
+.sb-stat-row button{border-radius:15px!important}.sb-stat-row strong{color:#c9a6ff!important}.profile-mini-nav button{font-size:20px!important}.profile-mini-nav button small{color:inherit!important}
+.profile-columns{display:grid!important;grid-template-columns:1fr!important}.profile-columns>.stack{display:contents!important}.profile-section{margin:8px 0!important;padding:15px!important}.profile-section h3{margin-bottom:10px!important}.sb-photo-grid img{height:95px!important}.sb-profile-form{flex-wrap:wrap!important}.sb-profile-form textarea{flex:1 0 100%!important}
+#sbProfileDialog{background:#0b1532!important;border:1px solid #5269a0!important;max-width:min(96vw,700px)!important;max-height:90dvh!important;overflow:auto!important;padding:14px!important}#sbProfileDialog::backdrop{background:#020716cf!important}
+#sbOtherContent .sb-other-head{background:#13254c!important;border-radius:0 0 18px 18px!important;padding:14px!important;align-items:center!important}#sbOtherContent .sb-other-jump{grid-template-columns:repeat(2,minmax(0,1fr))!important}#sbOtherContent .sb-other-jump button{background:#1d315f!important;color:#f6f7ff!important;border:1px solid #506ba4!important}
+#sbOtherContent .sb-other-cover{background:linear-gradient(120deg,#4a52d2,#22d3ee)!important;border-radius:18px 18px 0 0!important}
+#sbOtherContent .sb-feed-card{margin-bottom:10px!important}
+#sbOwnPostsSection{order:0!important}.profile-columns{order:1!important}
+.sb-voice-panel,.sb-voice-participants{color:#fff!important}
+@media(max-width:650px){.shell{padding:9px!important}.brand{font-size:23px!important}#view-perfil>.card{padding:9px!important}.profile-mini-nav{grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:7px!important}.profile-mini-nav button{min-height:57px!important}.sb-photo-grid{grid-template-columns:repeat(3,minmax(0,1fr))!important}.sb-photo-grid img{height:95px!important}.sb-feed-card{padding:12px!important}.tabs button{font-size:19px!important}.tabs button small{font-size:9px!important}}
+</style><style id="sb-unified-profile-2026">
+/* Perfis próprio e visitante: mesma linguagem visual */
+#sbProfileDialog{width:min(96vw,760px)!important;max-height:94dvh!important;padding:12px!important;background:#0b1532!important;border:1px solid #405b98!important;border-radius:24px!important}
+#sbOtherContent{gap:14px!important}
+#sbOtherContent .sb-other-cover{height:165px!important;min-height:165px!important;background-size:cover!important;background-position:center!important;border-radius:20px 20px 0 0!important}
+#sbOtherContent .sb-other-head{margin-top:-42px!important;position:relative!important;background:#112147!important;border-radius:0 0 20px 20px!important;min-height:110px!important;gap:12px!important}
+#sbOtherContent .sb-other-head img{border:4px solid white!important;border-radius:50%!important;width:88px!important;height:88px!important;object-fit:cover!important}
+#sbOtherContent .sb-other-head h3{font-size:23px!important;color:#fff!important}
+#sbOtherContent .sb-other-actions{display:flex!important;gap:10px!important;flex-wrap:wrap!important;margin:4px 0!important}
+#sbOtherContent .sb-other-jump{display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:8px!important}
+#sbOtherContent .sb-other-jump button{min-width:0!important;min-height:66px!important;display:flex!important;flex-direction:column!important;align-items:center!important;justify-content:center!important;gap:4px!important;border-radius:16px!important}
+#sbOtherContent>h3{font-size:19px!important;margin:8px 0 0!important;color:#f8faff!important}
+#sbOtherContent .sb-feed-card,#sbOtherContent .sb-entry{background:#142650!important;color:#f8faff!important;border:1px solid #405b98!important;border-radius:17px!important;padding:14px!important}
+#sbOtherContent .sb-photo-grid{display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:8px!important}
+#sbOtherContent .sb-photo-grid img{height:110px!important;border-radius:13px!important}
+#sbOtherContent .muted{color:#b9c7e8!important}
+#sbOtherContent .sb-profile-form textarea{width:100%!important}
+.sb-feed-card .danger,.sb-feed-comment .danger{font-size:12px!important;padding:7px 10px!important;margin-top:8px!important;background:#54253c!important;color:#ffe3e9!important;border:1px solid #a65a73!important}
+@media(max-width:430px){#sbOtherContent .sb-other-jump{grid-template-columns:repeat(3,minmax(0,1fr))!important}#sbOtherContent .sb-other-head img{width:74px!important;height:74px!important}}
+</style>
+<style id="socialbase-reference-2026">
+:root{--sb-night:#071331;--sb-purple:#8b5cf6;--sb-cyan:#22d3ee}
+html,body{background:#06112b!important;color:#f8faff!important}
+.shell{max-width:1100px!important;background:linear-gradient(165deg,#091737,#0b1532 75%)!important}
+.shell>header{background:#081733!important;border-bottom:1px solid #263d78!important}
+.brand{font-size:clamp(23px,4vw,33px)!important;font-weight:900!important;letter-spacing:-.8px!important;color:#fff!important}
+.brand:before{content:'📍';margin-right:7px;filter:drop-shadow(0 0 8px #8b5cf6)}
+.brand small{color:#96b5eb!important;letter-spacing:2px!important;font-size:10px!important}
+#app .tabs{background:#0a1737!important;border:1px solid #263b73!important;box-shadow:0 -6px 22px #03071c!important}
+#app .tabs button{color:#d3def8!important;border-radius:13px!important}
+#app .tabs button.active,.primary,#sbVoiceCreate{background:linear-gradient(115deg,#a14fff,#6738e6)!important;color:#fff!important;box-shadow:0 4px 14px #7637f666!important}
+#app .card,#app .profile-section,#app .sb-feed-card,#app .sb-room,.sb-modal{background:#11244c!important;color:#f8faff!important;border:1px solid #354c86!important;box-shadow:0 8px 24px #02071a66!important;border-radius:20px!important}
+#app .card h2,#app .card h3,#app .profile-section h3,#app .sb-feed-card strong{color:#fff!important}
+#app .sb-feed-head,#app .sb-voice-hero{background:linear-gradient(135deg,#172e71,#342078 68%,#0b597d)!important;color:#fff!important;border:1px solid #6d51d5!important}
+#app .sb-feed-card{background:#f8faff!important;color:#182b54!important;border:1px solid #d6e3ff!important}
+#app .sb-feed-card strong{color:#1c2f61!important}
+#app .sb-feed-card p,#app .sb-feed-card small{color:#263d68!important}
+#app .sb-feed-actions button{background:#e9edff!important;color:#432b98!important}
+#app .sb-feed-card textarea,#app .sb-feed-card input{background:#eaf0ff!important;color:#172a52!important;border-color:#bdcafa!important}
+.profile-cover,#sbOtherContent .sb-other-cover{background:linear-gradient(120deg,#3f5bd9,#7c55e8 55%,#20c7e4)!important}
+.profile-head,#sbOtherContent .sb-other-head{background:#10234b!important;color:#fff!important}
+.profile-mini-nav button,#sbOtherContent .sb-other-jump button{background:#1d3464!important;color:#e6edff!important;border:1px solid #445b94!important;border-radius:14px!important}
+.profile-mini-nav button.selected{background:linear-gradient(125deg,#9451ef,#6737e6)!important}
+#view-mapa .map{border:2px solid #4d58a3!important;border-radius:18px!important;overflow:hidden}
+.sb-moments{margin:0 0 15px;padding:12px 14px;background:#0d1d43;border:1px solid #2d4382;border-radius:20px;color:#fff}
+.sb-moments-title{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:10px}
+.sb-moments-title span{font-size:11px;color:#9ab8e8;font-weight:400}
+.sb-moments-title button{padding:6px 10px!important;font-size:12px!important}
+.sb-moments-strip{display:flex;gap:12px;overflow-x:auto;padding:5px 1px 9px;scrollbar-width:thin}
+.sb-moment-item{flex:0 0 75px;background:none;border:0;color:#fff;padding:0;text-align:center;font-size:12px;display:flex;flex-direction:column;gap:5px;align-items:center}
+.sb-moment-item img,.sb-moment-add{width:66px;height:66px;object-fit:cover;border-radius:50%;border:3px solid #9b5aff;box-shadow:0 0 0 2px #16d1ec55,0 0 15px #8b5cf666;background:#1a3166;display:grid;place-items:center;font-size:29px;color:#fff}
+.sb-moment-item small{max-width:76px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#e8eeff}
+#sbMomentDialog{border:1px solid #694ee0;border-radius:20px;background:#081431;color:#fff;padding:12px;max-width:min(94vw,460px);width:100%}
+#sbMomentDialog::backdrop{background:#020719dd}#sbMomentDialog img{width:100%;max-height:70vh;object-fit:contain;border-radius:12px}
+@media(max-width:600px){.shell{padding:5px!important}.shell>header{padding:9px!important}#app .tabs{position:fixed!important;bottom:0!important;left:0!important;right:0!important;z-index:100!important;display:flex!important;flex-wrap:nowrap!important;overflow-x:auto!important;border-radius:16px 16px 0 0!important;padding:6px!important}#app .tabs button{min-width:64px!important;flex:1 0 64px!important;padding:8px 3px!important;font-size:17px!important}#app .tabs small{font-size:10px!important}#view-feed{padding-bottom:115px!important}#sbProfileDialog{max-height:90dvh!important}}
+</style>
+</head>
+<body>
+<div class="shell">
+<header class="row between"><div class="brand">SocialBase<small>CONEXÕES REAIS</small></div><div class="row"><span id="userBadge" class="pill hidden"></span><button id="logout" class="secondary hidden">Sair</button></div></header>
+<section id="auth" class="card auth stack hidden"><h2>Entrar no SocialBase</h2><p class="muted">Use sua conta existente do aplicativo Android.</p><input id="email" type="email" autocomplete="email" placeholder="Seu e-mail"><input id="password" type="password" autocomplete="current-password" placeholder="Sua senha"><div class="row"><button id="login" class="primary">Entrar</button><button id="signup" class="secondary">Criar conta</button></div><button id="reset" class="ghost">Esqueci minha senha</button><p id="authInfo" class="muted"></p></section>
+<section id="app" class="hidden"><nav class="tabs" id="tabs" aria-label="Navegação principal">
+<button data-tab="feed" class="active">⌂<small>Início</small></button>
+<button data-tab="voz">🎧<small>Voz</small></button>
+<button data-tab="mapa">♧<small>Mapa</small></button>
+<button data-tab="conversas">▤<small>Conversas</small></button>
+<button data-tab="amigos">♙<small>Pessoas</small></button>
+<button data-tab="perfil">♙<small>Perfil</small></button>
+<button data-tab="admin" id="adminTab" class="hidden">⚙<small>Admin</small></button>
+</nav>
+<div id="view-feed" class="view hidden"><section id="sbMoments" class="sb-moments"><div class="sb-moments-title"><strong>Momentos <span>• fotos por 10 minutos</span></strong><button type="button" id="sbMomentRefresh" class="secondary">Atualizar</button></div><div class="sb-moments-strip" id="sbMomentStrip"><span class="muted">Entre para visualizar Momentos.</span></div><input id="sbMomentInput" type="file" accept="image/jpeg,image/png,image/webp" hidden></section><div class="sb-feed-head"><h2>SocialBase ✦</h2><p>Perto de você. Conectado ao mundo.</p><div class="sb-feed-pills"><button data-sb-filter="todos">Para você</button><button data-sb-filter="cidade">Minha cidade</button><button class="selected" data-sb-filter="amigos">Amigos</button><button data-sb-filter="comunidades">Comunidades</button></div></div><div class="sb-feed-card"><strong>Compartilhe um momento</strong><textarea id="sbPostText" maxlength="2000" placeholder="No que você está pensando?"></textarea><div class="row between"><label for="sbPostPhoto">📷 Foto (até 5 MB)</label><input id="sbPostPhoto" type="file" accept="image/jpeg,image/png,image/webp" style="max-width:180px"><button class="primary" id="sbPublish">Publicar</button></div><p class="sb-feed-meta">Publicações públicas podem aparecer para outros usuários. Nunca compartilhe sua localização exata sem querer.</p></div><div id="sbFeedItems" aria-live="polite"></div><button class="secondary" id="sbMorePosts" style="width:100%">Carregar mais</button></div><div id="view-voz" class="view hidden"><div class="sb-voice-panel"><div class="sb-voice-hero"><h2>🎧 Salas de Voz</h2><p>Converse com até cinco pessoas. Salas públicas ou privadas.</p><button type="button" id="sbVoiceCreate">＋ Criar Sala de Voz</button></div><div class="card stack"><div class="row between"><h3>Salas disponíveis</h3><button id="sbVoiceRefresh" class="secondary">Atualizar</button></div><div id="sbVoiceRooms">Carregando…</div></div><div id="sbVoiceActive" class="card stack hidden" style="margin-top:14px"><h2 id="sbVoiceTitle">Sala de Voz</h2><p id="sbVoiceNotice">Sala criada. Para ativar chamadas reais é necessário configurar o serviço de áudio.</p><div id="sbVoiceParticipants" class="sb-voice-participants"></div><div class="row"><button id="sbVoiceInvite" class="secondary">Convidar amigos</button><button id="sbVoiceLeave" class="danger">Sair da sala</button></div></div></div></div>
+<div id="view-mapa" class="view hidden"><div class="grid"><div class="card stack"><div class="row between"><h2>Mapa SocialBase</h2><div class="row"><span id="presenceLabel" class="status">OFFLINE</span><button id="presenceBtn" class="primary">Ficar ONLINE</button></div></div><div class="row"><input id="cityQuery" style="flex:1;min-width:140px" placeholder="Buscar cidade ou ID de usuário"><button id="citySearch" class="secondary">Buscar</button><button id="myLocation" class="secondary">📍 Minha posição</button></div><div id="map" class="map"></div><p id="mapStatus" class="muted" role="status" style="font-size:12px">Preparando mapa…</p><p id="gpsStatus" class="muted" role="status" style="font-size:12px">Localização ainda não verificada.</p><p class="muted" style="font-size:12px">A localização é compartilhada somente quando você escolhe ficar ONLINE e autoriza o navegador. A precisão é estimada e pode variar. O Safari precisa de HTTPS e permissão de localização. Ao fechar a aba, o GPS deixa de atualizar.</p></div><div class="panel"><div class="card stack"><h2>Pessoas online</h2><button id="refreshPeople" class="secondary">Atualizar pessoas</button><div id="peopleList" class="list"></div></div><div class="card stack"><h3>Informações</h3><p class="muted">Usuários do Android e do site compartilham o mesmo Supabase. A visibilidade depende das permissões e regras de bloqueio no servidor.</p></div></div></div></div>
+<div id="view-amigos" class="view hidden"><div class="card stack"><div class="row between"><h2>Amigos e solicitações</h2><button id="refreshFriends" class="secondary">Atualizar</button></div><h3>Meus amigos</h3><div id="friendsList" class="list"></div><h3>Solicitações recebidas</h3><div id="requestsIn" class="list"></div><h3>Solicitações enviadas</h3><div id="requestsOut" class="list"></div></div></div>
+<div id="view-conversas" class="view hidden"><div class="grid"><div class="card stack"><div class="row between"><h2>Conversas <span id="sbUnreadCount" class="pill" hidden>0</span></h2><button type="button" id="sbEnableNotifications" class="secondary">🔔 Ativar avisos</button></div><div id="chatFriends" class="list"></div></div><div class="card stack"><h2 id="chatTitle">Selecione um amigo</h2><div id="chatLog" class="chatlog"></div><form id="chatForm" class="stack"><textarea id="chatText" maxlength="2000" placeholder="Escreva sua mensagem..." disabled></textarea><div class="row"><div class="sb-media-actions"><button type="button" id="sbCameraBtn" class="secondary" disabled aria-label="Tirar foto">📷 Câmera</button><button type="button" id="sbGalleryBtn" class="secondary" disabled aria-label="Escolher foto da galeria">▧ Galeria</button></div><input id="chatImage" type="file" accept="image/jpeg,image/png,image/webp,image/*" class="hidden" disabled><input id="sbCameraInput" type="file" accept="image/*" capture="environment" class="hidden" disabled><button id="sendMessage" class="primary" disabled>Enviar mensagem</button><button id="deleteChat" type="button" class="danger" disabled>Apagar conversa</button></div></form><p class="muted" style="font-size:12px">Histórico das últimas 24 horas. O envio de fotos segue as regras do app e do Supabase.</p></div></div></div>
+<div id="view-perfil" class="view"><div class="card stack">
+<div class="profile-cover" id="sbCover"><button id="sbCoverEdit" type="button" class="sb-cover-edit">📷 Alterar capa</button></div><div class="profile-head"><div id="sbMyAvatar"></div><div class="profile-head-text"><h2 id="sbMyName">Meu perfil</h2><p id="sbMySummary" class="muted"></p><p id="sbMyBio"></p></div><button id="sbEditToggle" class="secondary">✎ Editar perfil</button></div>
+<div class="sb-stat-row"><button type="button" id="sbStatFriends"><strong id="sbStatFriendsNum">0</strong><small>Amigos</small></button><button type="button" id="sbStatPhotos"><strong id="sbStatPhotosNum">0</strong><small>Fotos</small></button><button type="button" id="sbStatCommunities"><strong id="sbStatCommunitiesNum">0</strong><small>Comunidades</small></button></div>
+<div class="profile-mini-nav" id="sbProfileNav">
+<button data-section="sobre" class="selected">♙<small>Sobre</small></button>
+<button data-section="fotos">▧<small>Fotos</small></button>
+<button data-section="recados">▢<small>Recados</small></button>
+<button data-section="amigos">♧<small>Amigos</small></button>
+<button data-section="comunidades">♧<small>Comunidades</small></button>
+<button data-section="depoimentos">♡<small>Depoimentos</small></button>
+</div>
+<div id="sbEditPanel" class="profile-section hidden"><input id="sbCoverFile" type="file" accept="image/jpeg,image/png,image/webp" class="hidden"><h3>Editar meu perfil</h3><div class="sb-profile-edit"><label>Nome de exibição</label><input id="profileName" maxlength="80"><label>Idade</label><input id="profileAge" type="number" min="0" max="120"><label>Cidade</label><input id="sbCity" maxlength="100" placeholder="Sua cidade"><label>Relacionamento</label><select id="sbRelationship" style="padding:12px;border:1px solid #cddcd1;border-radius:10px"><option value="">Prefiro não informar</option><option>Solteiro(a)</option><option>Namorando</option><option>Casado(a)</option><option>Outro</option></select><label>Sobre mim</label><textarea id="profileBio" maxlength="500"></textarea><div class="row"><button id="saveProfile" class="primary">Salvar perfil</button><label class="secondary" style="padding:10px;border-radius:9px;cursor:pointer">Adicionar foto <input id="profilePhoto" type="file" accept="image/*" style="display:none"></label></div><p id="publicId" class="muted"></p></div></div>
+<section id="sbOwnPostsSection" class="profile-section"><div class="row between"><h3>Minhas publicações</h3><button type="button" id="sbOwnPostsRefresh" class="secondary">Atualizar</button></div><div id="sbOwnPosts" class="sb-feed">Carregando…</div></section><div class="profile-columns"><div class="stack"><section id="sbSobre" class="profile-section"><h3>Sobre mim</h3><div id="sbAboutInfo"></div></section><section id="sbRecados" class="profile-section"><div class="row between"><h3>Recados <span id="sbScrapCount"></span></h3><button type="button" id="sbSeeScraps" class="sb-link">Ver todos ›</button></div><form id="sbScrapForm" class="sb-profile-form"><textarea id="sbScrapText" maxlength="1000" placeholder="Deixe um recado..."></textarea><button class="primary">Enviar</button></form><div id="sbScrapList" class="sb-feed"></div></section><section id="sbDepoimentos" class="profile-section"><h3>Depoimentos <span id="sbTestimonialCount"></span></h3><p class="muted" style="font-size:12px;margin-bottom:8px">Os depoimentos recebidos precisam de aprovação para aparecer no perfil.</p><div id="sbTestimonialList" class="sb-feed"></div></section></div><div class="stack"><section id="sbFotos" class="profile-section"><div class="row between"><h3>Minhas fotos</h3><button type="button" id="sbAllPhotos" class="sb-link">Ver todas ›</button></div><div id="myPhotos" class="sb-photo-grid"></div></section><section id="sbComunidades" class="profile-section"><div class="row between"><h3>Comunidades</h3><button id="sbCommunityExplore" class="secondary">Explorar / Criar</button></div><div id="sbMyCommunities" class="sb-feed"></div></section><section id="sbAmigos" class="profile-section"><div class="row between"><h3>Meus amigos <span id="sbFriendsCount"></span></h3><button type="button" id="sbSeeFriends" class="sb-link">Ver todos ›</button></div><div id="sbMyFriends" class="sb-friend-grid"></div></section></div></div>
+</div></div>
+<div id="view-admin" class="view hidden"><div class="card stack"><h2>Painel administrativo</h2><p class="muted">Disponível apenas quando o servidor confirma sua permissão.</p><textarea id="broadcastText" maxlength="2000" placeholder="Comunicado para os usuários"></textarea><button id="broadcastBtn" class="primary">Enviar comunicado</button><div id="adminUsers" class="list"></div></div></div>
+</section></div><div id="toast" class="hidden" role="status"></div>
+<div id="photoViewer" class="hidden" role="dialog" aria-modal="true" aria-label="Visualizador de fotos do perfil" tabindex="-1">
+ <div class="viewer-top"><strong id="viewerTitle">Fotos do perfil</strong><button type="button" id="viewerClose" aria-label="Fechar fotos">✕ Fechar</button></div>
+ <div class="viewer-main" id="viewerTouch"><button type="button" id="viewerPrev" class="viewer-prev" aria-label="Foto anterior">❮</button><img id="viewerImage" alt="Foto ampliada do perfil"><button type="button" id="viewerNext" class="viewer-next" aria-label="Próxima foto">❯</button></div>
+ <div id="viewerCount" aria-live="polite"></div><div id="viewerThumbs" class="viewer-thumbs" aria-label="Miniaturas das fotos"></div>
+</div>
+<dialog id="sbProfileDialog" class="sb-modal"><div class="row between"><h2 id="sbOtherTitle">Perfil</h2><button id="sbOtherClose" class="secondary">Fechar ✕</button></div><div id="sbOtherContent" class="stack" style="margin-top:12px"></div></dialog>
+<dialog id="sbCommunityDialog" class="sb-modal"><div class="row between"><h2>Comunidades</h2><button id="sbCommunityClose" class="secondary">Fechar ✕</button></div><div class="stack" style="margin-top:12px"><form id="sbCommunityForm" class="stack"><h3>Criar comunidade</h3><input id="sbCommunityName" maxlength="70" minlength="3" required placeholder="Nome da comunidade"><textarea id="sbCommunityDesc" maxlength="500" placeholder="Descrição"></textarea><button class="primary">Criar comunidade</button></form><h3>Explorar comunidades</h3><div id="sbCommunityList" class="sb-feed"></div><section id="sbCommunityInside" class="hidden"><button type="button" id="sbCommunityBack" class="secondary">← Voltar às comunidades</button><div id="sbCommunityCover" class="sb-community-cover" style="margin-top:12px"></div><h2 id="sbCommunityInsideName"></h2><p id="sbCommunityInsideDesc" class="muted"></p><div class="row" style="margin:10px 0"><input type="file" id="sbCommunityCoverFile" accept="image/jpeg,image/png,image/webp" class="hidden"><button type="button" id="sbCommunityCoverBtn" class="secondary hidden">📷 Alterar capa</button></div><div id="sbCommunityJoinNotice" class="notice hidden"></div><form id="sbTopicForm" class="stack"><h3>Criar tópico</h3><input id="sbTopicTitle" maxlength="120" placeholder="Título do tópico" required><textarea id="sbTopicText" maxlength="5000" placeholder="Escreva sua postagem..." required></textarea><button class="primary">Publicar tópico</button></form><h3 style="margin-top:15px">Tópicos da comunidade</h3><div id="sbTopicList" class="sb-feed"></div></section></div></dialog>
+<script>
+'use strict';
+/* Configuração opcional para site publicado: preencha apenas com valores PÚBLICOS. */
+const CONFIG = {
+  url: 'https://xsuxxzcdlnabctqipywf.supabase.co',
+  // Chave pública do projeto SocialBase (nunca usar chave secreta).
+  publishableKey: 'sb_publishable_-mYN4oHIzNM1S-mAhbFmeA_JzIIvalF'
+};
+const $=id=>document.getElementById(id), S={db:null,user:null,profile:null,online:false,map:null,markers:[],coords:null,people:[],friends:[],requests:[],chatFriend:null,chatTimer:null,refreshTimer:null,gpsTimer:null,admin:false,adminId:null,cityBounds:null,sbDetails:null,sbCurrentProfile:null,sbCommunityRows:[],sbMemberRows:[]};
+function show(id,yes=true){$(id).classList.toggle('hidden',!yes)}
+function message(t,err=false){const n=$('toast');n.textContent=t;n.style.background=err?'#9e2828':'#173c2a';show('toast');clearTimeout(message.t);message.t=setTimeout(()=>show('toast',false),5500)}
+function safe(t){return String(t??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+function fail(e){console.error(e);message(e?.message||String(e)||'Erro inesperado',true)}
+function empty(n,t){n.innerHTML='<p class="muted">'+safe(t)+'</p>'}
+function btn(t,fn,cls='secondary'){const b=document.createElement('button');b.textContent=t;b.className=cls;b.onclick=fn;return b}
+function profilePhotos(p){return [...new Set([...(Array.isArray(p?.photo_urls)?p.photo_urls:[]),p?.avatar_url].filter(u=>typeof u==='string'&&/^https:\/\//i.test(u)))].slice(0,6)}
+const gallery={photos:[],index:0,owner:'',previousFocus:null};
+function openGallery(p,index=0){const photos=profilePhotos(p);if(!photos.length){message('Este perfil ainda não possui fotos.',true);return}gallery.photos=photos;gallery.index=Math.max(0,Math.min(index,photos.length-1));gallery.owner=p.display_name||'Usuário SocialBase';gallery.previousFocus=document.activeElement;show('photoViewer',true);document.body.style.overflow='hidden';renderGallery();$('viewerClose').focus()}
+function renderGallery(){const {photos,index}=gallery;$('viewerTitle').textContent='Fotos de '+gallery.owner;$('viewerImage').src=photos[index];$('viewerImage').alt='Foto '+(index+1)+' de '+photos.length+' de '+gallery.owner;$('viewerCount').textContent=(index+1)+' de '+photos.length;$('viewerPrev').disabled=index===0;$('viewerNext').disabled=index===photos.length-1;const thumbs=$('viewerThumbs');thumbs.replaceChildren();photos.forEach((url,i)=>{const b=document.createElement('button');b.type='button';b.className=i===index?'selected':'';b.setAttribute('aria-label','Ver foto '+(i+1));b.setAttribute('aria-current',String(i===index));const im=document.createElement('img');im.src=url;im.alt='Miniatura '+(i+1);b.append(im);b.onclick=()=>{gallery.index=i;renderGallery()};thumbs.append(b)})}
+function stepGallery(delta){const next=gallery.index+delta;if(next>=0&&next<gallery.photos.length){gallery.index=next;renderGallery()}}
+function closeGallery(){show('photoViewer',false);$('viewerImage').removeAttribute('src');document.body.style.overflow='';gallery.photos=[];gallery.previousFocus?.focus?.()}
+function avatar(p){const a=document.createElement('div');a.className='avatar';const photos=profilePhotos(p);if(photos.length){const button=document.createElement('button');button.type='button';button.className='avatar-trigger';button.title='Ver perfil de '+(p.display_name||'usuário');const img=document.createElement('img');img.className='avatar';img.src=p.avatar_url||photos[0];img.alt='Foto de perfil';img.referrerPolicy='no-referrer';button.append(img);button.onclick=()=>{const id=p.id||p.user_id;if(id&&id!==S.user?.id)void showUser(id);else openGallery(p,0)};return button}a.textContent=(p.display_name||'P').slice(0,1).toUpperCase();return a}
+function item(p,buttons=[]){const d=document.createElement('div');d.className='person';d.append(avatar(p));const info=document.createElement('div');info.className='info';const strong=document.createElement('strong');strong.textContent=p.display_name||'Usuário SocialBase';info.append(strong);if((p.id||p.user_id)!==S.user?.id&&(p.id||p.user_id)){strong.style.cursor='pointer';strong.title='Ver perfil';strong.onclick=()=>void showUser(p.id||p.user_id)}if(p.public_id!=null){const s=document.createElement('small');s.textContent='ID '+p.public_id;info.append(s)}d.append(info);const actions=document.createElement('div');actions.className='actions';buttons.forEach(x=>actions.append(btn(x[0],x[1],x[2]||'secondary')));d.append(actions);return d}
+async function checked(p){const r=await p;if(r.error)throw r.error;return r.data}
+function init(){
+  // Visitantes nunca precisam configurar o Supabase: a conexão fica no arquivo publicado.
+  
+  show('auth',false);$('authInfo').textContent='Verificando sessão salva…';
+  const url=CONFIG.url;
+  const key=CONFIG.publishableKey;
+  if(!key || key==='COLE_AQUI_SUA_CHAVE_PUBLICA'){show('auth',true);
+    $('authInfo').textContent='Site aguardando a chave pública do Supabase. O administrador deve adicioná-la ao HTML uma única vez antes de publicar.';
+    $('login').disabled=true;$('signup').disabled=true;$('reset').disabled=true;
+    return;
+  }
+  if(key.startsWith('sb_secret_')||key.includes('service_role')){show('auth',true);
+    $('authInfo').textContent='Configuração insegura: não use uma chave secreta.';
+    $('login').disabled=true;$('signup').disabled=true;$('reset').disabled=true;
+    return;
+  }
+  try{
+    S.db=window.supabase.createClient(url,key,{auth:{
+      storage:window.localStorage,storageKey:'socialbase-auth-v1',
+      persistSession:true,autoRefreshToken:true,detectSessionInUrl:true
+    }});
+    S.db.auth.onAuthStateChange((_event,session)=>{setTimeout(()=>void setSession(session),0)});
+    S.db.auth.getSession().then(({data,error})=>error?fail(error):setSession(data.session));
+  }catch(e){show('auth',true);fail(e)}
+}
+async function setSession(session){const id=session?.user?.id||null;if(id===S.user?.id){if(id)void sbOpenPendingChat();return;}S.user=session?.user||null;show('auth',!S.user);show('app',!!S.user);show('logout',!!S.user);show('userBadge',!!S.user);$('userBadge').textContent=S.user?.email||'';if(!S.user){sbStopNotifications();clearInterval(S.refreshTimer);clearInterval(S.gpsTimer);clearInterval(S.chatTimer);S.online=false;return}try{await loadProfile();tab('feed');document.dispatchEvent(new Event('socialbase:feed-ready'));sbStartNotifications();void loadFriends();void loadPeople();void loadAdmin();/* Não ativar GPS automaticamente ao entrar. */clearInterval(S.refreshTimer);S.refreshTimer=setInterval(()=>{if(S.user){void loadPeople();void loadFriends()}},30000);clearInterval(S.gpsTimer);S.gpsTimer=setInterval(()=>{if(S.online)void updatePosition()},5*60*1000)}catch(e){fail(e)}}
+async function loadProfile(){S.profile=await checked(S.db.from('profiles').select('id,public_id,display_name,age,bio,avatar_url,photo_urls,is_online').eq('id',S.user.id).maybeSingle());S.online=!!S.profile?.is_online;$('profileName').value=S.profile?.display_name||'';$('profileAge').value=S.profile?.age??'';$('profileBio').value=S.profile?.bio||'';$('publicId').textContent='Meu ID público: '+(S.profile?.public_id??'não disponível');renderPhotos();renderPresence();await sbLoadMyProfile()}
+
+async function sbLoadDetails(id){return await checked(S.db.from('socialbase_profile_details').select('user_id,city,relationship_status,cover_url').eq('user_id',id).maybeSingle())}
+async function sbLoadMyProfile(){if(!S.user)return;try{S.sbDetails=await sbLoadDetails(S.user.id);sbRenderMyHeader();await Promise.all([sbLoadScraps(S.user.id,'sbScrapList','sbScrapCount'),sbLoadTestimonials(S.user.id,'sbTestimonialList','sbTestimonialCount'),sbLoadMyCommunities()]);sbRenderFriends();}catch(e){fail(e)}}
+function sbRenderMyHeader(){const p=S.profile||{};$('sbStatPhotosNum').textContent=profilePhotos(p).length;const cover=$('sbCover');if(cover){const u=S.sbDetails?.cover_url;cover.style.backgroundImage=(u&&/^https:\/\//i.test(u))?'linear-gradient(0deg,#263e8525,#263e8510),url('+JSON.stringify(u)+')':'';}$('sbMyAvatar').replaceChildren(avatar(p));$('sbMyName').textContent=p.display_name||'Meu perfil';$('sbMySummary').textContent=[p.age!=null?p.age+' anos':'',S.sbDetails?.city||'',S.online?'● Online':'○ Offline'].filter(Boolean).join(' • ');$('sbMyBio').textContent=p.bio||'Adicione uma descrição ao seu perfil.';$('sbCity').value=S.sbDetails?.city||'';$('sbRelationship').value=S.sbDetails?.relationship_status||'';const info=$('sbAboutInfo');info.replaceChildren();[['Nome',p.display_name||'—'],['Idade',p.age!=null?p.age+' anos':'—'],['Cidade',S.sbDetails?.city||'—'],['Relacionamento',S.sbDetails?.relationship_status||'—'],['Sobre mim',p.bio||'—']].forEach(([k,v])=>{const d=document.createElement('div');d.className='profile-detail';const b=document.createElement('b');b.textContent=k;const t=document.createElement('span');t.textContent=v;d.append(b,t);info.append(d)})}
+async function sbAuthorMap(rows){const ids=[...new Set(rows.map(x=>x.author_id))];if(!ids.length)return {};const data=await checked(S.db.from('profiles').select('id,display_name,avatar_url,photo_urls').in('id',ids));return Object.fromEntries((data||[]).map(p=>[p.id,p]))}
+async function sbDeletePost(post,refresh){
+ if(!confirm('Excluir esta publicação?'))return;
+ try{await checked(S.db.from('socialbase_feed_posts').delete().eq('id',post.id));
+ // A remoção da imagem do Storage deve ocorrer no servidor, após validar a autorização.
+ await refresh();message('Publicação excluída.');}catch(e){fail(e)}
+}
+function sbDeletePostButton(post,profileOwner,refresh){
+ if(S.user?.id!==post.author_id&&S.user?.id!==profileOwner)return null;
+ return btn('🗑 Excluir publicação',()=>void sbDeletePost(post,refresh),'danger');
+}
+async function sbLoadScraps(id,container,countId){const rows=await checked(S.db.from('socialbase_scraps').select('id,profile_user_id,author_id,content,created_at').eq('profile_user_id',id).order('created_at',{ascending:false}).limit(100));const authors=await sbAuthorMap(rows||[]);const box=$(container);box.replaceChildren();if(countId)$(countId).textContent='('+(rows||[]).length+')';if(!rows?.length)return empty(box,'Nenhum recado ainda.');for(const r of rows){const d=document.createElement('div');d.className='sb-entry';const meta=document.createElement('div');meta.className='meta';meta.textContent=(authors[r.author_id]?.display_name||'Usuário')+' • '+new Date(r.created_at).toLocaleString('pt-BR');const t=document.createElement('p');t.textContent=r.content;d.append(meta,t);if(S.user.id===id||S.user.id===r.author_id)d.append(btn('Apagar',async()=>{if(!confirm('Apagar recado?'))return;try{await checked(S.db.from('socialbase_scraps').delete().eq('id',r.id));await sbLoadScraps(id,container,countId)}catch(e){fail(e)}},'danger'));box.append(d)}}
+async function sbLoadTestimonials(id,container,countId){const rows=await checked(S.db.from('socialbase_testimonials').select('id,profile_user_id,author_id,content,approved,created_at').eq('profile_user_id',id).order('created_at',{ascending:false}).limit(100));const authors=await sbAuthorMap(rows||[]);const box=$(container);box.replaceChildren();if(countId)$(countId).textContent='('+(rows||[]).filter(x=>x.approved).length+')';if(!rows?.length)return empty(box,'Nenhum depoimento ainda.');for(const r of rows){const d=document.createElement('div');d.className='sb-entry';const meta=document.createElement('div');meta.className='meta';meta.textContent=(authors[r.author_id]?.display_name||'Usuário')+' • '+new Date(r.created_at).toLocaleDateString('pt-BR')+(r.approved?'':' • Aguardando aprovação');const t=document.createElement('p');t.textContent=r.content;d.append(meta,t);if(id===S.user.id&&!r.approved)d.append(btn('Aprovar',async()=>{try{await checked(S.db.from('socialbase_testimonials').update({approved:true}).eq('id',r.id));await sbLoadTestimonials(id,container,countId)}catch(e){fail(e)}},'primary'));if(S.user.id===id||S.user.id===r.author_id)d.append(btn('Excluir',async()=>{if(!confirm('Excluir depoimento?'))return;try{await checked(S.db.from('socialbase_testimonials').delete().eq('id',r.id));await sbLoadTestimonials(id,container,countId)}catch(e){fail(e)}},'danger'));box.append(d)}}
+function sbRenderFriends(){if(!$('sbMyFriends'))return;$('sbStatFriendsNum').textContent=S.friends?.length||0;const box=$('sbMyFriends');box.replaceChildren();$('sbFriendsCount').textContent='('+(S.friends?.length||0)+')';for(const p of (S.friends||[]).slice(0,12)){const d=document.createElement('div');d.append(avatar(p));const t=document.createElement('div');t.textContent=p.display_name||'Usuário';d.append(t);d.style.cursor='pointer';d.onclick=()=>void showUser(p.id);box.append(d)}if(!S.friends?.length)empty(box,'Nenhum amigo ainda.')}
+async function sbLoadMyCommunities(){const membership=await checked(S.db.from('socialbase_community_members').select('community_id').eq('user_id',S.user.id));const ids=(membership||[]).map(x=>x.community_id);$('sbStatCommunitiesNum').textContent=ids.length;const box=$('sbMyCommunities');box.replaceChildren();if(!ids.length)return empty(box,'Você ainda não participa de comunidades.');const rows=await checked(S.db.from('socialbase_communities').select('id,name,description,owner_id').in('id',ids));for(const r of rows||[]){const d=document.createElement('div');d.className='sb-community';const info=document.createElement('div');info.className='info';const b=document.createElement('strong');b.textContent=r.name;const t=document.createElement('small');t.textContent=r.description;info.append(b,t);d.append(info);d.append(btn('Ver',()=>void sbOpenCommunities(r.id)));box.append(d)}}
+let sbActiveCommunity=null;
+async function sbOpenCommunities(focusId){$('sbCommunityDialog').showModal();await sbLoadCommunities();if(focusId)await sbEnterCommunity(focusId)}
+async function sbLoadCommunities(){try{
+  sbActiveCommunity=null;show('sbCommunityInside',false);show('sbCommunityForm',true);show('sbCommunityList',true);
+  const [rows,members]=await Promise.all([checked(S.db.from('socialbase_communities').select('id,name,description,owner_id,cover_url,created_at').order('created_at',{ascending:false}).limit(100)),checked(S.db.from('socialbase_community_members').select('community_id,user_id').limit(10000))]);
+  S.sbCommunityRows=rows||[];S.sbMemberRows=members||[];
+  const box=$('sbCommunityList');box.replaceChildren();if(!rows?.length)return empty(box,'Ainda não há comunidades.');
+  for(const r of rows){const d=document.createElement('div');d.className='sb-community';const inf=document.createElement('div');inf.className='info';
+    if(r.cover_url){const img=document.createElement('img');img.src=r.cover_url;img.alt='Capa da comunidade';img.style.cssText='width:75px;height:65px;object-fit:cover;border-radius:9px;margin-right:8px';d.append(img)}
+    const b=document.createElement('strong');b.textContent=r.name;const t=document.createElement('small');t.textContent=(r.description||'Sem descrição')+' • '+members.filter(m=>m.community_id===r.id).length+' membro(s)';inf.append(b,t);d.append(inf);
+    d.append(btn('Entrar',()=>void sbEnterCommunity(r.id),'primary'));
+    const joined=members.some(m=>m.community_id===r.id&&m.user_id===S.user.id);
+    d.append(btn(joined?'Sair':'Participar',async()=>{try{if(joined){if(r.owner_id===S.user.id)return message('O criador não pode sair.',true);await checked(S.db.from('socialbase_community_members').delete().eq('community_id',r.id).eq('user_id',S.user.id))}else await checked(S.db.from('socialbase_community_members').insert({community_id:r.id,user_id:S.user.id}));await sbLoadCommunities();await sbLoadMyCommunities()}catch(e){fail(e)}},'secondary'));
+    if(r.owner_id===S.user.id)d.append(btn('Excluir',async()=>{if(!confirm('Excluir comunidade e todos os tópicos?'))return;try{await checked(S.db.from('socialbase_communities').delete().eq('id',r.id));await sbLoadCommunities();await sbLoadMyCommunities()}catch(e){fail(e)}},'danger'));
+    box.append(d)
+  }
+}catch(e){fail(e)}}
+async function sbEnterCommunity(id){try{
+  const r=S.sbCommunityRows.find(c=>String(c.id)===String(id));if(!r)return message('Comunidade não encontrada. Atualize a lista.',true);
+  sbActiveCommunity=r;show('sbCommunityInside',true);show('sbCommunityForm',false);show('sbCommunityList',false);
+  $('sbCommunityInsideName').textContent=r.name;$('sbCommunityInsideDesc').textContent=r.description||'';
+  $('sbCommunityCover').style.backgroundImage=r.cover_url?'url('+JSON.stringify(r.cover_url)+')':'';
+  const owner=r.owner_id===S.user.id;const joined=owner||S.sbMemberRows.some(m=>String(m.community_id)===String(id)&&m.user_id===S.user.id);
+  show('sbCommunityCoverBtn',owner);show('sbTopicForm',joined);show('sbCommunityJoinNotice',!joined);
+  $('sbCommunityJoinNotice').textContent='Participe da comunidade para criar tópicos e responder.';
+  await sbLoadTopics(id,joined);
+}catch(e){fail(e)}}
+async function sbLoadTopics(id,joined){
+  const rows=await checked(S.db.from('socialbase_community_topics').select('id,community_id,author_id,title,content,created_at').eq('community_id',id).order('created_at',{ascending:false}).limit(100));
+  const ids=[...new Set((rows||[]).map(x=>x.author_id))];const profiles=ids.length?await checked(S.db.from('profiles').select('id,display_name').in('id',ids)):[];
+  const names=Object.fromEntries((profiles||[]).map(p=>[p.id,p.display_name]));const box=$('sbTopicList');box.replaceChildren();if(!rows?.length)return empty(box,'Nenhum tópico ainda. Seja o primeiro a publicar!');
+  for(const t of rows){const d=document.createElement('article');d.className='sb-topic';const title=document.createElement('h3');title.textContent=t.title;const meta=document.createElement('small');meta.textContent=(names[t.author_id]||'Participante')+' • '+new Date(t.created_at).toLocaleString('pt-BR');const content=document.createElement('p');content.textContent=t.content;d.append(title,meta,content);
+    if(t.author_id===S.user.id||sbActiveCommunity?.owner_id===S.user.id)d.append(btn('Excluir tópico',async()=>{if(!confirm('Excluir este tópico e suas respostas?'))return;try{await checked(S.db.from('socialbase_community_topics').delete().eq('id',t.id));await sbLoadTopics(id,joined)}catch(e){fail(e)}},'danger'));
+    const replies=document.createElement('div');replies.className='stack';replies.style.marginTop='10px';d.append(replies);
+    const toggle=btn('💬 Ver respostas',async()=>{if(replies.dataset.loaded==='1'){replies.replaceChildren();replies.dataset.loaded='0';toggle.textContent='💬 Ver respostas';return}await sbLoadReplies(t.id,replies,joined);replies.dataset.loaded='1';toggle.textContent='Ocultar respostas'},'secondary');d.append(toggle);box.append(d)
+  }
+}
+async function sbLoadReplies(topicId,box,joined){try{
+  const rows=await checked(S.db.from('socialbase_community_replies').select('id,topic_id,author_id,content,created_at').eq('topic_id',topicId).order('created_at',{ascending:true}).limit(200));
+  const ids=[...new Set((rows||[]).map(x=>x.author_id))];const people=ids.length?await checked(S.db.from('profiles').select('id,display_name').in('id',ids)):[];const names=Object.fromEntries((people||[]).map(p=>[p.id,p.display_name]));box.replaceChildren();
+  if(!rows?.length){const p=document.createElement('small');p.textContent='Ainda não há respostas.';box.append(p)}
+  for(const r of rows||[]){const line=document.createElement('div');line.className='sb-reply';const meta=document.createElement('small');meta.textContent=(names[r.author_id]||'Participante')+' • '+new Date(r.created_at).toLocaleString('pt-BR');const body=document.createElement('p');body.textContent=r.content;line.append(meta,body);if(r.author_id===S.user.id||sbActiveCommunity?.owner_id===S.user.id)line.append(btn('Apagar',async()=>{if(!confirm('Apagar resposta?'))return;try{await checked(S.db.from('socialbase_community_replies').delete().eq('id',r.id));await sbLoadReplies(topicId,box,joined)}catch(e){fail(e)}},'danger'));box.append(line)}
+  if(joined){const form=document.createElement('form');form.className='stack';const input=document.createElement('textarea');input.required=true;input.maxLength=2000;input.placeholder='Escreva sua resposta...';input.style.minHeight='65px';const send=btn('Responder',()=>{},'primary');send.type='submit';form.append(input,send);form.onsubmit=async e=>{e.preventDefault();if(!input.value.trim())return;send.disabled=true;try{await checked(S.db.from('socialbase_community_replies').insert({topic_id:topicId,author_id:S.user.id,content:input.value.trim()}));await sbLoadReplies(topicId,box,joined)}catch(err){fail(err)}finally{send.disabled=false}};box.append(form)}
+}catch(e){fail(e)}}
+async function sbSaveDetails(){await checked(S.db.from('socialbase_profile_details').upsert({user_id:S.user.id,city:$('sbCity').value.trim(),relationship_status:$('sbRelationship').value,cover_url:S.sbDetails?.cover_url||null,updated_at:new Date().toISOString()},{onConflict:'user_id'}));S.sbDetails=await sbLoadDetails(S.user.id);sbRenderMyHeader()}
+function sbProfileSection(section){document.querySelectorAll('#sbProfileNav button').forEach(b=>b.classList.toggle('selected',b.dataset.section===section));const ids={sobre:'sbSobre',recados:'sbRecados',fotos:'sbFotos',comunidades:'sbComunidades',depoimentos:'sbDepoimentos',amigos:'sbAmigos'};$(ids[section]||'sbSobre')?.scrollIntoView({behavior:'smooth',block:'start'})}
+
+async function sbRenderFriendActions(id,p,container,dialog){
+  container.replaceChildren();
+  if(!S.user||id===S.user.id)return;
+  const me=S.user.id;
+  let requests=[];
+  try{
+    requests=await checked(S.db.from('friend_requests')
+      .select('id,requester_id,recipient_id,status,created_at')
+      .or(`and(requester_id.eq.${me},recipient_id.eq.${id}),and(requester_id.eq.${id},recipient_id.eq.${me})`)
+      .order('created_at',{ascending:false}));
+  }catch(e){fail(e);container.append(btn('Verificar amizade novamente',()=>void sbRenderFriendActions(id,p,container,dialog)));return}
+  const accepted=requests.find(r=>r.status==='accepted');
+  const received=requests.find(r=>r.status==='pending'&&r.recipient_id===me);
+  const sent=requests.find(r=>r.status==='pending'&&r.requester_id===me);
+  if(accepted){const friend=btn('✓ Amigos',()=>message('Vocês já são amigos.'),'secondary');friend.type='button';container.append(friend)}
+  else if(received){container.append(btn('✓ Aceitar amizade',async()=>{try{await checked(S.db.from('friend_requests').update({status:'accepted'}).eq('id',received.id).eq('recipient_id',me));await loadFriends();await sbRenderFriendActions(id,p,container,dialog);message('Amizade aceita.')}catch(e){fail(e)}},'primary'))}
+  else if(sent){const pending=btn('Solicitação enviada',()=>message('Aguardando resposta à solicitação.'));pending.disabled=true;container.append(pending)}
+  else {container.append(btn('Adicionar amigo',async()=>{try{await checked(S.db.from('friend_requests').insert({requester_id:me,recipient_id:id,status:'pending'}));await loadFriends();await sbRenderFriendActions(id,p,container,dialog);message('Solicitação enviada.')}catch(e){fail(e);await sbRenderFriendActions(id,p,container,dialog)}},'primary'))}
+  if(accepted||S.admin||id===S.adminId){container.append(btn('💬 Conversar',()=>{dialog.close();openChat(p)},'secondary'))}
+}
+let sbProfileRequest=0;
+async function sbOtherProfile(id,p){const request=++sbProfileRequest;const d=$('sbProfileDialog'),box=$('sbOtherContent');$('sbOtherTitle').textContent=p.display_name||'Perfil';box.replaceChildren();const detail=await sbLoadDetails(id);if(request!==sbProfileRequest)return;
+const cover=document.createElement('div');cover.className='profile-cover sb-other-cover';
+if(detail?.cover_url&&/^https:\/\//i.test(detail.cover_url))cover.style.backgroundImage='url('+JSON.stringify(detail.cover_url)+')';
+box.append(cover);
+const header=document.createElement('div');header.className='row sb-other-head';header.append(avatar(p));const info=document.createElement('div');const name=document.createElement('h3');name.textContent=p.display_name||'Usuário';const summary=document.createElement('p');summary.className='muted';summary.textContent=[p.age!=null?p.age+' anos':'',detail?.city||'',detail?.relationship_status||''].filter(Boolean).join(' • ');const bio=document.createElement('p');bio.textContent=p.bio||'Sem biografia';info.append(name,summary,bio);header.append(info);box.append(header);const photos=profilePhotos(p);const albumTitle=document.createElement('h3');albumTitle.textContent='Álbum de fotos';albumTitle.id='sbOtherAlbumTitle';if(photos.length){const row=document.createElement('div');row.className='sb-photo-grid';row.id='sbOtherPhotos';photos.forEach((url,i)=>{const b=document.createElement('button');b.className='photo-trigger';const img=document.createElement('img');img.src=url;img.alt='Foto do perfil';b.append(img);b.onclick=()=>openGallery(p,i);row.append(b)});box.append(albumTitle,row)}const actions=document.createElement('div');actions.className='row sb-other-actions';box.append(actions);
+// Consultar o estado real no Supabase, não apenas a lista local em cache.
+await sbRenderFriendActions(id,p,actions,d);
+const jump=document.createElement('div');jump.className='sb-other-jump';
+for(const [symbol,label,target] of [['📰','Publicações','sbOtherPosts'],['📷','Fotos','sbOtherAlbumTitle'],['💬','Recados','sbOtherScraps'],['👥','Comunidades','sbOtherCommunities'],['♡','Depoimentos','sbOtherTestimonials']]){
+ const b=btn(label,()=>{const el=document.getElementById(target);if(el)el.scrollIntoView({behavior:'smooth',block:'start'});else message('Nenhuma foto disponível neste perfil.');});
+ b.textContent='';const icon=document.createElement('span');icon.textContent=symbol;const text=document.createElement('span');text.textContent=label;b.append(icon,text);jump.append(b);
+}
+box.append(jump);if(!photos.length)box.append(albumTitle);
+// Álbum separado das publicações: fotos já salvas no perfil.
+if(!photos.length){const albumEmpty=document.createElement('p');albumEmpty.className='muted';albumEmpty.textContent='Este perfil ainda não possui fotos no álbum.';box.append(albumEmpty)}
+const postsTitle=document.createElement('h3');postsTitle.textContent='Publicações';box.append(postsTitle);
+const postsBox=document.createElement('div');postsBox.id='sbOtherPosts';postsBox.className='sb-feed';postsBox.textContent='Carregando publicações…';box.append(postsBox);
+const postsMore=btn('Ver mais publicações',()=>void loadOtherPosts(),'secondary');postsMore.type='button';postsMore.hidden=true;box.append(postsMore);
+let postsCursor=null;
+async function loadOtherPosts(){try{postsMore.disabled=true;let q=S.db.from('socialbase_feed_posts').select('id,author_id,body,image_path,city,created_at').eq('author_id',id).order('created_at',{ascending:false}).order('id',{ascending:false}).limit(10);if(postsCursor)q=q.lt('created_at',postsCursor);const rows=await checked(q);if(request!==sbProfileRequest)return;if(!postsCursor)postsBox.replaceChildren();for(const post of rows||[]){const card=document.createElement('article');card.className='sb-feed-card';const date=document.createElement('small');date.className='sb-feed-meta';date.textContent=new Date(post.created_at).toLocaleString('pt-BR');card.append(date);if(post.body){const t=document.createElement('p');t.textContent=post.body;t.style.whiteSpace='pre-wrap';card.append(t)}if(post.image_path){const im=document.createElement('img');im.className='sb-feed-photo';im.loading='lazy';im.alt='Foto da publicação';im.src=S.db.storage.from('socialbase-feed').getPublicUrl(post.image_path).data.publicUrl;card.append(im)}const del=sbDeletePostButton(post,id,async()=>{postsCursor=null;await loadOtherPosts()});if(del)card.append(del);postsBox.append(card)}if(!rows?.length&&!postsCursor)postsBox.textContent='Nenhuma publicação neste perfil.';postsCursor=rows?.at(-1)?.created_at||postsCursor;postsMore.hidden=(rows||[]).length<10}catch(e){postsBox.textContent='Não foi possível carregar as publicações.';console.warn('Publicações do perfil:',e)}finally{postsMore.disabled=false}}
+void loadOtherPosts();
+const otherCommunitiesTitle=document.createElement('h3');otherCommunitiesTitle.textContent='Comunidades';box.append(otherCommunitiesTitle);
+const otherCommunities=document.createElement('div');otherCommunities.className='sb-feed';otherCommunities.id='sbOtherCommunities';box.append(otherCommunities);
+const memberships=await checked(S.db.from('socialbase_community_members').select('community_id').eq('user_id',id));
+const communityIds=(memberships||[]).map(x=>x.community_id);
+if(communityIds.length){const communityRows=await checked(S.db.from('socialbase_communities').select('id,name,description').in('id',communityIds));for(const c of communityRows||[]){const line=document.createElement('div');line.className='sb-community';const txt=document.createElement('div');txt.className='info';const bold=document.createElement('strong');bold.textContent=c.name;const sub=document.createElement('small');sub.textContent=c.description||'';txt.append(bold,sub);line.append(txt);line.append(btn('Ver',()=>void sbOpenCommunities(c.id)));otherCommunities.append(line)}}else empty(otherCommunities,'Nenhuma comunidade.');
+const title=document.createElement('h3');title.textContent='Recados';box.append(title);const form=document.createElement('form');form.className='sb-profile-form';const input=document.createElement('textarea');input.maxLength=1000;input.placeholder='Escreva um recado...';const send=btn('Enviar',()=>{},'primary');send.type='submit';form.append(input,send);form.onsubmit=async e=>{e.preventDefault();if(!input.value.trim())return;try{await checked(S.db.from('socialbase_scraps').insert({profile_user_id:id,author_id:S.user.id,content:input.value.trim()}));input.value='';await sbLoadScraps(id,'sbOtherScraps')}catch(e){fail(e)}};box.append(form);const scrapList=document.createElement('div');scrapList.id='sbOtherScraps';scrapList.className='sb-feed';box.append(scrapList);const th=document.createElement('h3');th.textContent='Depoimentos';box.append(th);const tf=document.createElement('form');tf.className='sb-profile-form';const ti=document.createElement('textarea');ti.maxLength=1000;ti.placeholder='Escreva um depoimento (precisa de aprovação)...';const tb=btn('Enviar depoimento',()=>{},'primary');tb.type='submit';tf.append(ti,tb);tf.onsubmit=async e=>{e.preventDefault();if(!ti.value.trim())return;try{await checked(S.db.from('socialbase_testimonials').insert({profile_user_id:id,author_id:S.user.id,content:ti.value.trim()}));ti.value='';message('Depoimento enviado para aprovação.');await sbLoadTestimonials(id,'sbOtherTestimonials')}catch(e){fail(e)}};box.append(tf);const testimonialList=document.createElement('div');testimonialList.id='sbOtherTestimonials';testimonialList.className='sb-feed';box.append(testimonialList);d.showModal();await Promise.all([sbLoadScraps(id,'sbOtherScraps'),sbLoadTestimonials(id,'sbOtherTestimonials')])}
+function renderPhotos(){const c=$('myPhotos');c.replaceChildren();const saved=Array.isArray(S.profile?.photo_urls)?S.profile.photo_urls:[];const photos=profilePhotos(S.profile);photos.forEach((u,i)=>{const w=document.createElement('div');w.className='stack';w.style.gap='5px';const trigger=document.createElement('button');trigger.type='button';trigger.className='photo-trigger';trigger.setAttribute('aria-label','Ampliar foto '+(i+1));const img=document.createElement('img');img.src=u;img.className='photo';img.alt='Foto '+(i+1);trigger.append(img);trigger.onclick=()=>openGallery(S.profile,i);w.append(trigger);const originalIndex=saved.indexOf(u);if(originalIndex!==-1)w.append(btn('Remover',()=>void removePhoto(originalIndex),'danger'));c.append(w)})} 
+async function setPresence(value){if(!S.user)return;try{await checked(S.db.rpc('set_my_presence',{new_online:value,new_visible:value}));S.online=value;renderPresence();if(value)await updatePosition();else {S.coords=null;if(S.myMarker){S.myMarker.remove();S.myMarker=null}}await loadPeople()}catch(e){fail(e)}}
+function renderPresence(){$('presenceLabel').textContent=S.online?'● ONLINE':'○ OFFLINE';$('presenceLabel').classList.toggle('online',S.online);$('presenceBtn').textContent=S.online?'Ficar OFFLINE':'Ficar ONLINE';$('presenceBtn').className=S.online?'danger':'primary'}
+// Safari/iOS e Android: aceitar coordenadas válidas sem exigir precisão de 4 m.
+// A precisão do dispositivo é uma estimativa; não significa localização exata.
+function geolocationError(error){
+  if(error?.code===1)return Error('Localização negada. No iPhone: Ajustes > Privacidade e Segurança > Serviços de Localização > Safari Websites. Depois autorize o site no Safari.');
+  if(error?.code===2)return Error('Posição indisponível. Verifique se os Serviços de Localização estão ligados e tente em área aberta.');
+  if(error?.code===3)return Error('Tempo de localização esgotado. Tente novamente com o GPS ativado.');
+  return Error(error?.message||'Não foi possível obter sua localização.');
+}
+function readGeolocation(options){return new Promise((resolve,reject)=>{
+  navigator.geolocation.getCurrentPosition(resolve,reject,options);
+})}
+async function getCoords(){
+  if(!window.isSecureContext)throw Error('A localização exige HTTPS. Abra o endereço seguro do SocialBase.');
+  if(!navigator.geolocation)throw Error('Este navegador não oferece geolocalização.');
+  let lastError;
+  for(const options of [
+    {enableHighAccuracy:true,maximumAge:15000,timeout:18000},
+    {enableHighAccuracy:false,maximumAge:60000,timeout:15000}
+  ]){
+    try{
+      const p=await readGeolocation(options);
+      const c={latitude:Number(p.coords.latitude),longitude:Number(p.coords.longitude),accuracy:Number(p.coords.accuracy)};
+      if(!Number.isFinite(c.latitude)||!Number.isFinite(c.longitude)||Math.abs(c.latitude)>90||Math.abs(c.longitude)>180)throw Error('O aparelho retornou coordenadas inválidas.');
+      return c;
+    }catch(e){lastError=e;if(e?.code===1)break}
+  }
+  throw geolocationError(lastError);
+}
+function showOwnLocation(p){
+  if(!S.map||!window.maplibregl)return;
+  if(S.myMarker)S.myMarker.remove();
+  const el=document.createElement('div');el.title='Minha posição';
+  el.style.cssText='width:20px;height:20px;border:4px solid white;background:#2563eb;border-radius:50%;box-shadow:0 0 0 5px #2563eb40,0 2px 8px #0004';
+  S.myMarker=new maplibregl.Marker({element:el}).setLngLat([p.longitude,p.latitude]).addTo(S.map);
+}
+async function updatePosition(){
+  if(!S.user||!S.online)return;
+  try{
+    $('gpsStatus').textContent='Solicitando localização ao navegador…';
+    const p=await getCoords();
+    if(!S.user||!S.online)return; // não publicar se ficou offline durante a leitura
+    S.coords=p;
+    await checked(S.db.from('user_locations').upsert({
+      user_id:S.user.id,latitude:p.latitude,longitude:p.longitude,
+      updated_at:new Date().toISOString()
+    },{onConflict:'user_id'}));
+    showOwnLocation(p);
+    const precision=Number.isFinite(p.accuracy)?Math.round(p.accuracy)+' m':'não informada';
+    $('gpsStatus').textContent='Localização enviada • precisão estimada: '+precision+'.';
+    message('Localização compartilhada. Precisão estimada: '+precision+'.');
+    await loadPeople();
+  }catch(e){
+    $('gpsStatus').textContent='Localização não enviada: '+(e.message||'verifique a permissão');
+    message('GPS: '+(e.message||'verifique a permissão'),true);
+  }
+}
+function ensureMap(){
+ if(S.map)return;
+ if(!window.maplibregl){$('mapStatus').textContent='Biblioteca do mapa não carregou. Verifique a conexão com a internet ou bloqueadores do navegador.';return}
+ try{
+  S.map=new maplibregl.Map({container:'map',style:'https://tiles.openfreemap.org/styles/liberty',center:[-51.5,-23.4],zoom:5,attributionControl:true});
+  S.map.addControl(new maplibregl.NavigationControl(),'top-right');
+  S.map.on('load',()=>{$('mapStatus').textContent='Mapa carregado.';S.map.resize();drawPeople();if(S.coords)showOwnLocation(S.coords)});
+  S.map.on('error',e=>{console.warn('Mapa:',e.error);$('mapStatus').textContent='Falha ao carregar os dados do mapa. Confira internet e acesso ao servidor de mapas.'});
+ }catch(e){console.error(e);$('mapStatus').textContent='Erro ao iniciar o mapa: '+(e.message||e)}
+}
+function focus(lat,lng,zoom=14){tab('mapa');ensureMap();if(!S.map)return;S.map.resize();S.map.flyTo({center:[Number(lng),Number(lat)],zoom,essential:true})}
+async function loadPeople(){if(!S.db||!S.user)return;try{const d=await checked(S.db.rpc('get_online_map_users'));S.people=(d||[]).map(p=>({...p,latitude:Number(p.approximate_latitude??p.latitude),longitude:Number(p.approximate_longitude??p.longitude)})).filter(p=>Number.isFinite(p.latitude)&&Number.isFinite(p.longitude));renderPeople();drawPeople()}catch(e){console.warn(e);empty($('peopleList'),'Não foi possível carregar pessoas online.')}}
+function drawPeople(){if(!S.map)return;S.markers.forEach(m=>m.remove());S.markers=[];for(const p of S.people){if(S.cityBounds){const b=S.cityBounds;if(p.latitude<b.south||p.latitude>b.north||p.longitude<b.west||p.longitude>b.east)continue}const node=document.createElement('div');node.style.cssText='width:19px;height:19px;background:#1aaf5b;border:3px solid white;border-radius:50%;box-shadow:0 1px 8px #0006';const popup=new maplibregl.Popup({offset:18}).setText(p.display_name||'Usuário SocialBase');S.markers.push(new maplibregl.Marker({element:node}).setLngLat([p.longitude,p.latitude]).setPopup(popup).addTo(S.map))}}
+function renderPeople(){const n=$('peopleList');n.replaceChildren();const data=S.people.filter(p=>!S.cityBounds||(p.latitude>=S.cityBounds.south&&p.latitude<=S.cityBounds.north&&p.longitude>=S.cityBounds.west&&p.longitude<=S.cityBounds.east));if(!data.length)return empty(n,'Nenhuma pessoa online visível no momento.');data.forEach(p=>n.append(item(p,[['📍 MAPA',()=>focus(p.latitude,p.longitude,13)],['Ver perfil',()=>void showUser(p.user_id||p.id)],['Amizade',()=>void showUser(p.user_id||p.id)]])))}
+async function showUser(id){if(!id)return;try{if(id===S.user?.id){tab('perfil');return}const p=await checked(S.db.from('profiles').select('id,public_id,display_name,age,bio,avatar_url,photo_urls,is_online').eq('id',id).maybeSingle());if(!p)return message('Perfil não encontrado',true);await sbOtherProfile(id,p)}catch(e){fail(e)}}
+async function requestFriend(id,name){if(!id||id===S.user.id)return;try{await checked(S.db.from('friend_requests').insert({requester_id:S.user.id,recipient_id:id,status:'pending'}));message('Solicitação enviada para '+(name||'usuário'));await loadFriends()}catch(e){fail(e)}}
+async function loadFriends(){if(!S.user)return;try{S.requests=await checked(S.db.from('friend_requests').select('id,requester_id,recipient_id,status,created_at').or(`requester_id.eq.${S.user.id},recipient_id.eq.${S.user.id}`));const accepted=S.requests.filter(r=>r.status==='accepted');const ids=[...new Set(accepted.map(r=>r.requester_id===S.user.id?r.recipient_id:r.requester_id))];S.friends=ids.length?await checked(S.db.from('profiles').select('id,public_id,display_name,avatar_url,photo_urls,is_online').in('id',ids)):[];renderFriends();sbRenderFriends()}catch(e){fail(e)}}
+function renderFriends(){const n=$('friendsList'),c=$('chatFriends'),incoming=$('requestsIn'),outgoing=$('requestsOut');[n,c,incoming,outgoing].forEach(x=>x.replaceChildren());if(!S.friends.length){empty(n,'Você ainda não tem amigos.');empty(c,'Adicione amigos para conversar.')}if(S.adminId && S.adminId!==S.user?.id && !S.friends.some(p=>p.id===S.adminId)){
+ S.db.from('profiles').select('id,display_name,avatar_url,photo_urls,public_id').eq('id',S.adminId).maybeSingle().then(({data,error})=>{
+   if(!error&&data&&S.user){c.prepend(item(data,[['💬 Falar com administração',()=>openChat(data),'primary']]))}
+ });
+}
+S.friends.forEach(p=>{const b=[['👤 Perfil',()=>void showUser(p.id)],['💬 Chat',()=>openChat(p)],['📍 MAPA',()=>void findFriend(p)]];n.append(item(p,b));c.append(item(p,[['Abrir conversa',()=>openChat(p)]]))});const inc=S.requests.filter(r=>r.recipient_id===S.user.id&&r.status==='pending'),out=S.requests.filter(r=>r.requester_id===S.user.id&&r.status==='pending');if(!inc.length)empty(incoming,'Nenhuma solicitação recebida.');if(!out.length)empty(outgoing,'Nenhuma solicitação enviada.');const ids=[...new Set([...inc.map(x=>x.requester_id),...out.map(x=>x.recipient_id)])];if(!ids.length)return;S.db.from('profiles').select('id,display_name,avatar_url,public_id').in('id',ids).then(({data,error})=>{if(error)return;const by=Object.fromEntries((data||[]).map(p=>[p.id,p]));inc.forEach(r=>incoming.append(item(by[r.requester_id]||{display_name:'Usuário'},[['Aceitar',()=>void answerRequest(r,'accepted'),'primary'],['Recusar',()=>void answerRequest(r,'rejected'),'danger']])));out.forEach(r=>outgoing.append(item(by[r.recipient_id]||{display_name:'Usuário'},[['Cancelar',()=>void cancelRequest(r),'danger']])))} )}
+async function answerRequest(r,status){try{if(status==='accepted')await checked(S.db.from('friend_requests').update({status:'accepted'}).eq('id',r.id).eq('recipient_id',S.user.id));else await checked(S.db.from('friend_requests').delete().eq('id',r.id).eq('recipient_id',S.user.id));await loadFriends()}catch(e){fail(e)}}
+async function cancelRequest(r){try{await checked(S.db.from('friend_requests').delete().eq('id',r.id).eq('requester_id',S.user.id));await loadFriends()}catch(e){fail(e)}}
+async function findFriend(p){try{const list=await checked(S.db.rpc('get_online_map_users'));const f=(list||[]).find(x=>(x.user_id||x.id)===p.id);if(!f)return message('Amigo offline ou localização indisponível',true);S.cityBounds=null;await loadPeople();focus(f.approximate_latitude??f.latitude,f.approximate_longitude??f.longitude,13)}catch(e){fail(e)}}
+// Web Push SocialBase: registro por aparelho e abertura direta da conversa.
+const sbNotifications={seen:new Set(),initialized:false,timer:null,busy:false};
+const SB_VAPID_PUBLIC_KEY='BEK14g3WZhcoX3g4HvZJgncNJZ3P0du-W4ZMSX02PLtQOQVHtp2f8RV6ijeUaoDfc7FrtuLKQMQ0rO-CZbMrmZk';
+function sbB64ToBytes(s){const pad='='.repeat((4-s.length%4)%4);const bin=atob((s+pad).replace(/-/g,'+').replace(/_/g,'/'));return Uint8Array.from(bin,c=>c.charCodeAt(0))}
+async function sbRegisterWorker(){if(!('serviceWorker' in navigator))throw Error('Navegador sem suporte a Service Worker.');return navigator.serviceWorker.register('/sw.js',{scope:'/'})}
+async function sbSavePushSubscription(){
+ if(!S.user||!S.db)throw Error('Entre na sua conta antes de ativar notificações.');
+ if(!SB_VAPID_PUBLIC_KEY||SB_VAPID_PUBLIC_KEY.startsWith('COLE_AQUI'))throw Error('Configure a chave pública VAPID no index.html.');
+ const reg=await sbRegisterWorker();
+ const existing=await reg.pushManager.getSubscription();
+ const sub=existing||await reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:sbB64ToBytes(SB_VAPID_PUBLIC_KEY)});
+ await checked(S.db.from('socialbase_push_subscriptions').upsert({user_id:S.user.id,endpoint:sub.endpoint,subscription:sub.toJSON(),updated_at:new Date().toISOString()},{onConflict:'endpoint'}));
+ return sub;
+}
+async function sbCheckMessages(){
+ if(!S.user||!S.db||sbNotifications.busy)return;sbNotifications.busy=true;
+ try{
+  const {data,error}=await S.db.from('direct_messages').select('id,sender_id,content,image_path,created_at,read_at').eq('recipient_id',S.user.id).gt('created_at',new Date(Date.now()-86400000).toISOString()).order('created_at',{ascending:false}).limit(200);
+  if(error)throw error;const rows=data||[],unread=rows.filter(m=>!m.read_at);const badge=$('sbUnreadCount');
+  if(badge){badge.textContent=unread.length>99?'99+':String(unread.length);badge.hidden=!unread.length}
+  if(sbNotifications.initialized){for(const m of rows.filter(m=>!sbNotifications.seen.has(m.id)).reverse()){
+    if(S.chatFriend?.id===m.sender_id&&!document.hidden)continue;
+    if(!document.hidden)message(m.image_path?'Você recebeu uma foto.':'Nova mensagem recebida.');
+  }}
+  rows.forEach(m=>sbNotifications.seen.add(m.id));sbNotifications.initialized=true;
+ }catch(e){console.warn('Avisos de mensagens:',e)}finally{sbNotifications.busy=false}
+}
+function sbStartNotifications(){clearInterval(sbNotifications.timer);sbNotifications.seen.clear();sbNotifications.initialized=false;void sbCheckMessages();sbNotifications.timer=setInterval(()=>void sbCheckMessages(),7000);void sbOpenPendingChat();}
+function sbStopNotifications(){clearInterval(sbNotifications.timer);sbNotifications.timer=null;sbNotifications.initialized=false;sbNotifications.seen.clear();}
+async function sbEnableNotifications(){
+ if(!('Notification' in window)||!('PushManager' in window)||!('serviceWorker' in navigator)){message('Seu navegador não suporta Web Push. No iPhone, adicione o site à Tela de Início.',true);return}
+ try{const permission=await Notification.requestPermission();if(permission!=='granted')throw Error('Permissão de notificações não concedida.');await sbSavePushSubscription();message('Notificações push ativadas neste aparelho!')}
+ catch(e){fail(e)}
+}
+async function sbRemovePushSubscription(){
+ try{const reg=await navigator.serviceWorker?.getRegistration('/');const sub=await reg?.pushManager?.getSubscription();if(sub&&S.user){await S.db.from('socialbase_push_subscriptions').delete().eq('user_id',S.user.id).eq('endpoint',sub.endpoint);await sub.unsubscribe()}}catch(e){console.warn('Não foi possível desativar push:',e)}
+}
+let sbOpeningPushChat=false;
+async function sbOpenPendingChat(senderId){
+ const id=senderId||new URL(location.href).searchParams.get('chat');
+ if(!id||!/^[0-9a-f-]{36}$/i.test(id)||!S.user||!S.db||sbOpeningPushChat)return;
+ sbOpeningPushChat=true;
+ try{
+  const p=await checked(S.db.from('profiles').select('id,display_name,avatar_url,public_id').eq('id',id).maybeSingle());
+  if(!p)return;
+  openChat(p);
+  const url=new URL(location.href);
+  url.searchParams.delete('chat');
+  history.replaceState(null,'',url.pathname+url.search+url.hash);
+ }catch(e){console.warn('Não foi possível abrir conversa do push:',e)}
+ finally{sbOpeningPushChat=false}
+}
+window.addEventListener('focus',()=>void sbOpenPendingChat());
+window.addEventListener('pageshow',()=>void sbOpenPendingChat());
+window.addEventListener('popstate',()=>void sbOpenPendingChat());
+document.addEventListener('visibilitychange',()=>{if(!document.hidden)void sbOpenPendingChat()});
+navigator.serviceWorker?.addEventListener('message',event=>{
+ if(event.data?.type==='SOCIALBASE_OPEN_CHAT'){
+  const id=event.data.sender_id;
+  if(typeof id==='string'&&/^[0-9a-f-]{36}$/i.test(id)){
+   const url=new URL(location.href);url.searchParams.set('chat',id);
+   history.replaceState(null,'',url.pathname+url.search+url.hash);
+   void sbOpenPendingChat(id);
+  }
+ }
+});
+function openChat(p){S.chatFriend=p;$('chatTitle').textContent='Conversa com '+p.display_name;$('chatText').disabled=false;$('chatImage').disabled=false;$('sbCameraInput').disabled=false;$('sbCameraBtn').disabled=false;$('sbGalleryBtn').disabled=false;$('sendMessage').disabled=false;$('deleteChat').disabled=false;tab('conversas');void loadChat();clearInterval(S.chatTimer);S.chatTimer=setInterval(()=>{if(S.chatFriend&&S.user)void loadChat()},5000)}
+const sbChatSignedUrls=new Map();
+async function sbResolveChatImage(path){
+  if(sbChatSignedUrls.has(path))return sbChatSignedUrls.get(path);
+  const pending=(async()=>{const {data,error}=await S.db.storage.from('pulse-chat-images').createSignedUrl(path,3600);if(error)throw error;if(!data?.signedUrl)throw Error('Link da foto não retornado pelo Storage');return data.signedUrl})();
+  sbChatSignedUrls.set(path,pending);
+  try{return await pending}catch(e){sbChatSignedUrls.delete(path);throw e}
+}
+async function loadChat(){
+ const p=S.chatFriend;if(!p||!S.user)return;
+ try{
+  const me=S.user.id,other=p.id;
+  const d=await checked(S.db.from('direct_messages').select('id,sender_id,recipient_id,content,created_at,read_at,image_path').or(`and(sender_id.eq.${me},recipient_id.eq.${other}),and(sender_id.eq.${other},recipient_id.eq.${me})`).gt('created_at',new Date(Date.now()-86400000).toISOString()).order('created_at',{ascending:true}).limit(500));
+  if(S.chatFriend?.id!==other)return;
+  const n=$('chatLog');
+  // Preservar imagens já carregadas: a atualização periódica não deve recriar as tags IMG.
+  const signature=other+'|'+(d||[]).map(m=>m.id).join(',');
+  if(n.dataset.chatSignature!==signature){
+   n.replaceChildren();n.dataset.chatSignature=signature;
+   for(const m of d||[]){
+    const bubble=document.createElement('div');bubble.className='bubble'+(m.sender_id===me?' mine':'');
+    if(m.content&&!(m.image_path&&m.content==='📷 Foto')){const t=document.createElement('div');t.textContent=m.content;bubble.append(t)}
+    if(m.image_path){
+     const img=document.createElement('img');img.className='sb-chat-image';img.alt='Foto enviada na conversa';img.decoding='async';
+     const placeholder=document.createElement('div');placeholder.className='sb-chat-img-placeholder';placeholder.textContent='Carregando foto...';bubble.append(placeholder);
+     sbResolveChatImage(m.image_path).then(url=>{
+      if(!bubble.isConnected)return;
+      img.onload=()=>{placeholder.remove()};
+      img.onerror=()=>{placeholder.textContent='Não foi possível abrir a foto. Verifique as permissões de leitura do Storage.';img.remove()};
+      img.onclick=()=>window.open(url,'_blank','noopener,noreferrer');
+      bubble.insertBefore(img,placeholder);img.src=url;
+      if(img.complete&&img.naturalWidth>0)placeholder.remove();
+     }).catch(err=>{console.error('Foto do chat:',err);if(bubble.isConnected)placeholder.textContent='Foto indisponível: '+(err?.message||'verifique as permissões do Storage')});
+    }
+    const time=document.createElement('time');time.textContent=new Date(m.created_at).toLocaleString('pt-BR');bubble.append(time);n.append(bubble);
+   }
+   n.scrollTop=n.scrollHeight;
+  }
+  await S.db.from('direct_messages').update({read_at:new Date().toISOString()}).eq('sender_id',other).eq('recipient_id',me).is('read_at',null);
+ }catch(e){fail(e)}
+}
+
+async function sendChat(e){e.preventDefault();if(!S.chatFriend)return;const t=$('chatText').value.trim();if(!t)return;try{await checked(S.db.from('direct_messages').insert({sender_id:S.user.id,recipient_id:S.chatFriend.id,content:t}));$('chatText').value='';await loadChat()}catch(e){fail(e)}}
+// Normalizar imagens de câmera/galeria para JPEG, formato aceito com maior frequência
+// pelos buckets que restringem MIME. Não inserir mensagem no banco se o upload falhar.
+async function sbPrepareChatImage(file){
+ if(!file)throw Error('Selecione uma foto.');
+ if(!file.type.startsWith('image/'))throw Error('Selecione um arquivo de imagem.');
+ if(file.size>15*1024*1024)throw Error('A foto original excede 15 MB.');
+ if(file.type==='image/jpeg'&&file.size<=8*1024*1024)return file;
+ const url=URL.createObjectURL(file);
+ try{
+  const img=new Image();
+  await new Promise((resolve,reject)=>{img.onload=resolve;img.onerror=()=>reject(Error('Não foi possível ler esta imagem.'));img.src=url});
+  const maxSide=1920,ratio=Math.min(1,maxSide/Math.max(img.naturalWidth,img.naturalHeight));
+  const canvas=document.createElement('canvas');canvas.width=Math.max(1,Math.round(img.naturalWidth*ratio));canvas.height=Math.max(1,Math.round(img.naturalHeight*ratio));
+  const ctx=canvas.getContext('2d');if(!ctx)throw Error('Não foi possível preparar a imagem.');
+  ctx.fillStyle='#ffffff';ctx.fillRect(0,0,canvas.width,canvas.height);ctx.drawImage(img,0,0,canvas.width,canvas.height);
+  const blob=await new Promise((resolve,reject)=>canvas.toBlob(b=>b?resolve(b):reject(Error('Falha ao converter imagem.')),'image/jpeg',0.83));
+  if(blob.size>8*1024*1024)throw Error('A imagem convertida excede 8 MB.');
+  return new File([blob],'foto.jpg',{type:'image/jpeg',lastModified:Date.now()});
+ }finally{URL.revokeObjectURL(url)}
+}
+let sbSendingPhoto=false;
+async function sendChatImage(file){
+ if(!file||!S.chatFriend||!S.user||sbSendingPhoto)return;
+ const recipient=S.chatFriend.id;
+ sbSendingPhoto=true;
+ const camera=$('sbCameraBtn'),gallery=$('sbGalleryBtn');camera.disabled=true;gallery.disabled=true;
+ try{
+  message('Preparando foto...');
+  const prepared=await sbPrepareChatImage(file);
+  const path=`${S.user.id}/${recipient}/${Date.now()}-${Math.random().toString(36).slice(2)}.jpg`;
+  const {error:uploadError}=await S.db.storage.from('pulse-chat-images').upload(path,prepared,{contentType:'image/jpeg',upsert:false});
+  if(uploadError){if(/mime type|not supported/i.test(uploadError.message||''))throw Error('O bucket pulse-chat-images não permite JPEG. No Supabase Storage, autorize image/jpeg em Allowed MIME types.');throw uploadError}
+  try{await checked(S.db.from('direct_messages').insert({sender_id:S.user.id,recipient_id:recipient,content:'📷 Foto',image_path:path}))}
+  catch(e){console.error('Falha ao registrar foto:',e);throw Error('Foto enviada ao armazenamento, mas não registrada na conversa: '+(e.message||e))}
+  message('Foto enviada!');if(S.chatFriend?.id===recipient)await loadChat();
+ }catch(e){fail(e)}finally{sbSendingPhoto=false;camera.disabled=!S.chatFriend;gallery.disabled=!S.chatFriend;$('chatImage').value='';$('sbCameraInput').value=''}
+}
+async function deleteChat(){
+  if(!S.chatFriend||!S.user)return;
+  const other=S.chatFriend.id;
+  const name=S.chatFriend.display_name||'este usuário';
+  if(!confirm('APAGAR CONVERSA\n\nDeseja apagar todas as mensagens trocadas com '+name+'?\n\nA conversa será apagada para os DOIS usuários.\nEsta ação não pode ser desfeita.'))return;
+  const button=$('deleteChat');button.disabled=true;button.textContent='Apagando...';
+  try{
+    const count=await checked(S.db.rpc('pulse_delete_conversation',{p_other_user_id:other}));
+    if(S.chatFriend?.id===other){$('chatLog').replaceChildren();await loadChat()}
+    message('Conversa apagada para os dois usuários.'+(typeof count==='number'?' '+count+' mensagem(ns) excluída(s).':''));
+  }catch(e){fail(e)}finally{button.disabled=!S.chatFriend;button.textContent='Apagar conversa'}
+}
+async function saveProfile(){try{const age=$('profileAge').value.trim();if(age&&(Number(age)<0||Number(age)>120||!Number.isInteger(Number(age))))return message('Idade inválida',true);await checked(S.db.from('profiles').update({display_name:$('profileName').value.trim(),age:age?Number(age):null,bio:$('profileBio').value.trim()}).eq('id',S.user.id));await sbSaveDetails();message('Perfil atualizado');await loadProfile();show('sbEditPanel',false)}catch(e){fail(e)}}
+async function uploadPhoto(file){if(!file)return;if(file.size>8*1024*1024)return message('Foto acima de 8 MB',true);try{const ext=file.type==='image/png'?'png':'jpg';const path=`${S.user.id}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;await checked(S.db.storage.from('profile-photos').upload(path,file,{contentType:file.type}));const u=S.db.storage.from('profile-photos').getPublicUrl(path).data.publicUrl;const photos=[...(S.profile?.photo_urls||[]),u].slice(0,6);await checked(S.db.from('profiles').update({photo_urls:photos,avatar_url:photos[0]||null}).eq('id',S.user.id));await loadProfile();message('Foto adicionada')}catch(e){fail(e)}finally{$('profilePhoto').value=''}}
+async function removePhoto(i){if(!confirm('Remover esta foto do perfil?'))return;try{const photos=[...(S.profile?.photo_urls||[])];photos.splice(i,1);await checked(S.db.from('profiles').update({photo_urls:photos,avatar_url:photos[0]||null}).eq('id',S.user.id));await loadProfile()}catch(e){fail(e)}}
+async function loadAdmin(){try{const [a,b]=await Promise.all([S.db.rpc('pulse_is_admin'),S.db.rpc('pulse_admin_user_id')]);S.admin=!a.error&&a.data===true;S.adminId=!b.error&&typeof b.data==='string'?b.data:null;show('adminTab',S.admin);if(S.user)renderFriends();if(S.admin){const data=await checked(S.db.from('profiles').select('id,display_name,public_id,avatar_url,is_online').order('display_name').limit(500));const n=$('adminUsers');n.replaceChildren();(data||[]).forEach(p=>{if(p.id!==S.user.id)n.append(item(p,[[ '💬 Conversar',()=>openChat(p),'primary'],['👤 Perfil',()=>void showUser(p.id)]]))})}}catch(e){console.warn('Admin indisponível',e)}}
+async function broadcast(){const t=$('broadcastText').value.trim();if(!S.admin||!t||!confirm('Enviar comunicado para todos os usuários?'))return;try{const count=await checked(S.db.rpc('pulse_admin_broadcast',{p_content:t}));$('broadcastText').value='';message('Comunicado enviado. Destinatários: '+count)}catch(e){fail(e)}}
+async function sbLoadOwnPosts(){if(!S.user||!S.db)return;const box=$('sbOwnPosts');if(!box)return;try{const rows=await checked(S.db.from('socialbase_feed_posts').select('id,author_id,body,image_path,created_at').eq('author_id',S.user.id).order('created_at',{ascending:false}).limit(10));box.replaceChildren();if(!rows?.length){box.textContent='Você ainda não publicou no Feed.';return}for(const post of rows){const card=document.createElement('article');card.className='sb-feed-card';const time=document.createElement('small');time.className='sb-feed-meta';time.textContent=new Date(post.created_at).toLocaleString('pt-BR');card.append(time);if(post.body){const p=document.createElement('p');p.textContent=post.body;card.append(p)}if(post.image_path){const im=document.createElement('img');im.className='sb-feed-photo';im.loading='lazy';im.alt='Foto da publicação';im.src=S.db.storage.from('socialbase-feed').getPublicUrl(post.image_path).data.publicUrl;card.append(im)}const del=sbDeletePostButton(post,S.user.id,sbLoadOwnPosts);if(del)card.append(del);box.append(card)}}catch(e){box.textContent='Não foi possível carregar as publicações.';console.warn(e)}}
+function tab(name){document.querySelectorAll('.view').forEach(v=>show(v.id,v.id==='view-'+name));document.querySelectorAll('#tabs button').forEach(b=>b.classList.toggle('active',b.dataset.tab===name&&(name!=='perfil'||b.textContent.trim()==='Perfil')));if(name==='perfil')void sbLoadOwnPosts();if(name==='mapa'){ensureMap();setTimeout(()=>S.map?.resize(),150)}if(name==='amigos')void loadFriends();if(name==='conversas'&&S.chatFriend)void loadChat()}
+async function citySearch(){const q=$('cityQuery').value.trim();if(!q){S.cityBounds=null;await loadPeople();return}if(/^\d+$/.test(q)){try{const p=await checked(S.db.from('profiles').select('id').eq('public_id',Number(q)).maybeSingle());if(!p)return message('ID não encontrado',true);await showUser(p.id)}catch(e){fail(e)}return}try{const res=await fetch('https://geocoding-api.open-meteo.com/v1/search?name='+encodeURIComponent(q)+'&count=1&language=pt&format=json');if(!res.ok)throw Error('Busca de cidades indisponível');const d=await res.json(),p=d.results?.[0];if(!p)return message('Cidade não encontrada',true);S.cityBounds=p.latitude&&p.longitude?{south:p.latitude-.3,north:p.latitude+.3,west:p.longitude-.3,east:p.longitude+.3}:null;focus(p.latitude,p.longitude,10);renderPeople();drawPeople()}catch(e){fail(e)}}
+$('login').onclick=async()=>{try{await checked(S.db.auth.signInWithPassword({email:$('email').value.trim(),password:$('password').value}));message('Login realizado')}catch(e){fail(e)}};
+$('signup').onclick=async()=>{try{await checked(S.db.auth.signUp({email:$('email').value.trim(),password:$('password').value,options:{emailRedirectTo:location.origin+location.pathname}}));$('authInfo').textContent='Cadastro enviado. Confira seu e-mail para confirmar a conta, se exigido.'}catch(e){fail(e)}};
+$('reset').onclick=async()=>{const email=$('email').value.trim();if(!email)return message('Informe seu e-mail primeiro',true);try{await checked(S.db.auth.resetPasswordForEmail(email,{redirectTo:location.origin+location.pathname}));message('Verifique seu e-mail para redefinir a senha.')}catch(e){fail(e)}};
+$('logout').onclick=async()=>{try{await sbRemovePushSubscription();await setPresence(false);await checked(S.db.auth.signOut());S.user=null;S.chatFriend=null;sbStopNotifications();clearInterval(S.refreshTimer);clearInterval(S.chatTimer);clearInterval(S.gpsTimer);show('app',false);show('auth');show('logout',false);show('userBadge',false)}catch(e){fail(e)}};
+$('presenceBtn').onclick=()=>void setPresence(!S.online);
+$('myLocation').onclick=async()=>{
+ try{
+   $('gpsStatus').textContent='Obtendo sua localização…';
+   const p=await getCoords();
+   S.coords=p;
+   focus(p.latitude,p.longitude,15);
+   showOwnLocation(p);
+   $('gpsStatus').textContent='Sua posição encontrada • precisão estimada '+(Number.isFinite(p.accuracy)?Math.round(p.accuracy)+' m':'não informada')+'. '+(S.online?'Compartilhamento ativado.':'Você está OFFLINE: sua posição não será enviada.');
+ }catch(e){$('gpsStatus').textContent=e.message||'Falha no GPS';fail(e)}
+};
+$('refreshPeople').onclick=()=>void loadPeople();$('refreshFriends').onclick=()=>void loadFriends();$('citySearch').onclick=()=>void citySearch();$('cityQuery').onkeydown=e=>{if(e.key==='Enter')void citySearch()};
+$('viewerClose').onclick=closeGallery;$('viewerPrev').onclick=()=>stepGallery(-1);$('viewerNext').onclick=()=>stepGallery(1);$('photoViewer').addEventListener('click',e=>{if(e.target===$('photoViewer'))closeGallery()});document.addEventListener('keydown',e=>{if($('photoViewer').classList.contains('hidden'))return;if(e.key==='Escape'){e.preventDefault();closeGallery()}if(e.key==='ArrowLeft'){e.preventDefault();stepGallery(-1)}if(e.key==='ArrowRight'){e.preventDefault();stepGallery(1)}});let touchStartX=null;$('viewerTouch').addEventListener('touchstart',e=>{touchStartX=e.changedTouches[0]?.screenX??null},{passive:true});$('viewerTouch').addEventListener('touchend',e=>{if(touchStartX===null)return;const dx=(e.changedTouches[0]?.screenX??touchStartX)-touchStartX;touchStartX=null;if(Math.abs(dx)>45)stepGallery(dx<0?1:-1)},{passive:true});
+$('sbEnableNotifications').onclick=sbEnableNotifications;$('chatForm').onsubmit=sendChat;$('chatImage').onchange=e=>void sendChatImage(e.target.files?.[0]);$('sbCameraInput').onchange=e=>void sendChatImage(e.target.files?.[0]);$('sbGalleryBtn').onclick=()=>$('chatImage').click();$('sbCameraBtn').onclick=()=>$('sbCameraInput').click();$('deleteChat').onclick=()=>void deleteChat();$('saveProfile').onclick=()=>void saveProfile();$('profilePhoto').onchange=e=>void uploadPhoto(e.target.files?.[0]);$('broadcastBtn').onclick=()=>void broadcast();
+$('sbEditToggle').onclick=()=>show('sbEditPanel',$('sbEditPanel').classList.contains('hidden'));
+document.querySelectorAll('#sbProfileNav button').forEach(b=>b.onclick=()=>sbProfileSection(b.dataset.section));
+$('sbScrapForm').onsubmit=async e=>{e.preventDefault();const text=$('sbScrapText').value.trim();if(!text)return;try{await checked(S.db.from('socialbase_scraps').insert({profile_user_id:S.user.id,author_id:S.user.id,content:text}));$('sbScrapText').value='';await sbLoadScraps(S.user.id,'sbScrapList','sbScrapCount')}catch(err){fail(err)}};
+$('sbCommunityExplore').onclick=()=>void sbOpenCommunities();
+$('sbCommunityClose').onclick=()=>$('sbCommunityDialog').close();
+$('sbCommunityBack').onclick=()=>void sbLoadCommunities();
+$('sbCommunityCoverBtn').onclick=()=>$('sbCommunityCoverFile').click();
+$('sbCommunityCoverFile').onchange=async e=>{const file=e.target.files?.[0];if(!file||!sbActiveCommunity)return;try{
+ if(!['image/jpeg','image/png','image/webp'].includes(file.type))throw Error('Escolha uma imagem JPG, PNG ou WebP.');if(file.size>5*1024*1024)throw Error('A capa deve ter no máximo 5 MB.');
+ const id=sbActiveCommunity.id;const ext=file.type==='image/png'?'png':file.type==='image/webp'?'webp':'jpg';const path=S.user.id+'/'+id+'-'+Date.now()+'.'+ext;
+ await checked(S.db.storage.from('socialbase-community-covers').upload(path,file,{contentType:file.type,upsert:false}));
+ const url=S.db.storage.from('socialbase-community-covers').getPublicUrl(path).data.publicUrl;
+ await checked(S.db.from('socialbase_communities').update({cover_url:url}).eq('id',id).eq('owner_id',S.user.id));
+ await sbLoadCommunities();await sbEnterCommunity(id);message('Capa atualizada!');
+ }catch(err){fail(err)}finally{e.target.value=''}};
+$('sbTopicForm').onsubmit=async e=>{e.preventDefault();if(!sbActiveCommunity)return;const id=sbActiveCommunity.id;try{
+ await checked(S.db.from('socialbase_community_topics').insert({community_id:id,author_id:S.user.id,title:$('sbTopicTitle').value.trim(),content:$('sbTopicText').value.trim()}));
+ $('sbTopicForm').reset();await sbLoadTopics(id,true);message('Tópico publicado!')
+ }catch(err){fail(err)}};
+
+$('sbOtherClose').onclick=()=>$('sbProfileDialog').close();
+$('sbCommunityForm').onsubmit=async e=>{e.preventDefault();try{await checked(S.db.from('socialbase_communities').insert({name:$('sbCommunityName').value.trim(),description:$('sbCommunityDesc').value.trim(),owner_id:S.user.id}));$('sbCommunityForm').reset();await sbLoadCommunities();await sbLoadMyCommunities();message('Comunidade criada!')}catch(err){fail(err)}};
+
+
+$('sbOwnPostsRefresh').onclick=()=>void sbLoadOwnPosts();$('sbAllPhotos').onclick=()=>{const p=profilePhotos(S.profile);if(p.length)openGallery(S.profile,0);else{$('sbEditPanel').classList.remove('hidden');message('Adicione sua primeira foto em Editar perfil.')}};
+$('sbSeeScraps').onclick=()=>sbProfileSection('recados');
+$('sbSeeFriends').onclick=()=>tab('amigos');
+$('sbStatFriends').onclick=()=>sbProfileSection('amigos');
+$('sbStatPhotos').onclick=()=>sbProfileSection('fotos');
+$('sbStatCommunities').onclick=()=>sbProfileSection('comunidades');
+$('sbCoverEdit').onclick=()=>$('sbCoverFile').click();
+$('sbCoverFile').onchange=async e=>{
+  const file=e.target.files?.[0];if(!file)return;
+  if(!['image/jpeg','image/png','image/webp'].includes(file.type))return message('Capa: use JPG, PNG ou WebP.',true);
+  if(file.size>8*1024*1024)return message('A capa deve ter até 8 MB.',true);
+  try{
+    const ext=file.type==='image/png'?'png':file.type==='image/webp'?'webp':'jpg';
+    const path=`${S.user.id}/capa-${Date.now()}.${ext}`;
+    await checked(S.db.storage.from('profile-photos').upload(path,file,{contentType:file.type}));
+    const url=S.db.storage.from('profile-photos').getPublicUrl(path).data.publicUrl;
+    await checked(S.db.from('socialbase_profile_details').upsert({
+      user_id:S.user.id,city:S.sbDetails?.city||'',relationship_status:S.sbDetails?.relationship_status||'',cover_url:url,updated_at:new Date().toISOString()
+    },{onConflict:'user_id'}));
+    S.sbDetails=await sbLoadDetails(S.user.id);
+    sbRenderMyHeader();
+    message('Foto de capa atualizada.');
+  }catch(error){fail(error)}finally{$('sbCoverFile').value=''}
+};
+
+document.querySelectorAll('#tabs button').forEach(b=>b.onclick=()=>tab(b.dataset.tab));
+S.db=null;init();
+</script>
+
+<script>
+/* Feed isolado: não altera autenticação, mapa, mensagens ou perfil existentes. */
+(()=>{
+const el=id=>document.getElementById(id);
+let cursor=null,filter='amigos',loading=false,seen=new Set();
+const escapeHTML=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+function client(){if(!S.db||!S.user)throw Error('Entre na sua conta para acessar o Feed.');return S.db}
+function msg(e){if(typeof message==='function')message(e.message||String(e),true);else alert(e.message||String(e))}
+function setBusy(v){loading=v;el('sbMorePosts').disabled=v;el('sbMorePosts').textContent=v?'Carregando…':'Carregar mais'}
+async function optimize(file){if(!file)return null;if(!['image/jpeg','image/png','image/webp'].includes(file.type)||file.size>5*1024*1024)throw Error('Escolha JPG, PNG ou WebP de até 5 MB.');const bmp=await createImageBitmap(file);try{const scale=Math.min(1,1280/Math.max(bmp.width,bmp.height));const c=document.createElement('canvas');c.width=Math.max(1,Math.round(bmp.width*scale));c.height=Math.max(1,Math.round(bmp.height*scale));c.getContext('2d').drawImage(bmp,0,0,c.width,c.height);return await new Promise((resolve,reject)=>c.toBlob(b=>b?resolve(b):reject(Error('Falha ao comprimir foto')),'image/webp',.76))}finally{bmp.close()}}
+async function publish(){const b=el('sbPublish');if(b.disabled)return;b.disabled=true;let path=null;try{const db=client(),text=el('sbPostText').value.trim(),file=el('sbPostPhoto').files[0];if(!text&&!file)throw Error('Escreva algo ou selecione uma foto.');let image_path=null;if(file){const blob=await optimize(file);path=`${S.user.id}/${crypto.randomUUID()}.webp`;const r=await db.storage.from('socialbase-feed').upload(path,blob,{contentType:'image/webp',upsert:false});if(r.error)throw r.error;image_path=path}const r=await db.from('socialbase_feed_posts').insert({author_id:S.user.id,body:text,image_path,city:(S.sbDetails?.city||S.profile?.city||'').slice(0,100)});if(r.error)throw r.error;el('sbPostText').value='';el('sbPostPhoto').value='';await load(true)}catch(e){if(path)await S.db.storage.from('socialbase-feed').remove([path]).catch(()=>{});msg(e)}finally{b.disabled=false}}
+function photoUrl(path){if(!path)return '';return client().storage.from('socialbase-feed').getPublicUrl(path).data.publicUrl}
+async function load(reset=false){if(loading)return;try{const db=client();setBusy(true);if(reset){cursor=null;seen.clear();el('sbFeedItems').replaceChildren()}let q=db.from('socialbase_feed_posts').select('id,author_id,body,image_path,city,created_at').order('created_at',{ascending:false}).order('id',{ascending:false}).limit(10);if(cursor)q=q.or(`created_at.lt.${cursor.created_at},and(created_at.eq.${cursor.created_at},id.lt.${cursor.id})`);if(filter==='cidade'){const city=(S.sbDetails?.city||S.profile?.city||'').trim();if(!city)throw Error('Cadastre sua cidade no perfil para usar este filtro.');q=q.ilike('city',city)}if(filter==='amigos'){if(!S.requests?.length){const rr=await db.from('friend_requests').select('requester_id,recipient_id,status').or(`requester_id.eq.${S.user.id},recipient_id.eq.${S.user.id}`);if(!rr.error)S.requests=rr.data||[]}const ids=[...new Set([S.user.id,...(S.friends||[]).map(x=>x.id).filter(Boolean),...(S.requests||[]).filter(x=>x.status==='accepted').map(x=>x.requester_id===S.user.id?x.recipient_id:x.requester_id)])].filter(x=>/^[0-9a-f-]{36}$/i.test(x));if(!ids.length){el('sbFeedItems').textContent='Nenhuma publicação de amigos encontrada.';return}q=q.in('author_id',ids)}if(filter==='comunidades'){el('sbFeedItems').textContent='As publicações das comunidades continuam na seção Comunidades.';el('sbMorePosts').hidden=true;return}el('sbMorePosts').hidden=false;const {data,error}=await q;if(error)throw error;if(!data?.length){el('sbMorePosts').hidden=true;if(reset)el('sbFeedItems').textContent='Nenhuma publicação ainda.';return}cursor=data[data.length-1];const authors=[...new Set(data.map(p=>p.author_id))];const pr=await db.from('profiles').select('id,display_name,avatar_url').in('id',authors);const names=new Map((pr.data||[]).map(p=>[p.id,p]));for(const p of data){if(seen.has(p.id))continue;seen.add(p.id);const a=names.get(p.author_id)||{};const card=document.createElement('article');card.className='sb-feed-card';const h=document.createElement('div');h.className='sb-feed-author';if(a.avatar_url&&/^https:\/\//.test(a.avatar_url)){const im=document.createElement('img');im.className='sb-feed-avatar';im.loading='lazy';im.src=a.avatar_url;im.alt='';h.append(im)}const info=document.createElement('div');info.innerHTML=`<strong>${escapeHTML(a.display_name||'Usuário')}</strong><div class="sb-feed-meta">${escapeHTML(p.city||'SocialBase')} · ${new Date(p.created_at).toLocaleString('pt-BR')}</div>`;h.append(info);card.append(h);if(p.body){const t=document.createElement('p');t.textContent=p.body;t.style.whiteSpace='pre-wrap';card.append(t)}if(p.image_path){const im=document.createElement('img');im.className='sb-feed-photo';im.loading='lazy';im.src=photoUrl(p.image_path);im.alt='Foto da publicação';card.append(im)}const actions=document.createElement('div');actions.className='sb-feed-actions';const like=document.createElement('button');like.textContent='♡ Curtir';like.onclick=async()=>{try{const {error}=await db.from('socialbase_feed_likes').upsert({post_id:p.id,user_id:S.user.id},{onConflict:'post_id,user_id'});if(error)throw error;like.textContent='♥ Curtido';like.disabled=true}catch(e){msg(e)}};actions.append(like);const delPost=sbDeletePostButton(p,p.author_id,async()=>{await load(true);await sbLoadOwnPosts()});if(delPost)actions.append(delPost);const comments=document.createElement('button');comments.textContent='💬 Comentários';actions.append(comments);card.append(actions);const area=document.createElement('div');area.hidden=true;const list=document.createElement('div');const field=document.createElement('div');field.className='sb-feed-commentbox';const input=document.createElement('input');input.maxLength=500;input.placeholder='Escreva um comentário';const send=document.createElement('button');send.textContent='Enviar';send.className='primary';field.append(input,send);area.append(list,field);card.append(area);async function loadComments(){const r=await db.from('socialbase_feed_comments').select('id,author_id,body,created_at').eq('post_id',p.id).order('created_at',{ascending:false}).limit(20);if(r.error)throw r.error;list.replaceChildren();for(const c of r.data||[]){const d=document.createElement('div');d.className='sb-feed-comment';d.textContent=c.body;if(c.author_id===S.user.id||p.author_id===S.user.id){const del=btn('Excluir comentário',async()=>{if(!confirm('Excluir comentário?'))return;try{await checked(db.from('socialbase_feed_comments').delete().eq('id',c.id));await loadComments()}catch(e){msg(e)}},'danger');d.append(del)}list.append(d)}}comments.onclick=async()=>{area.hidden=!area.hidden;if(!area.hidden)try{await loadComments()}catch(e){msg(e)}};send.onclick=async()=>{const body=input.value.trim();if(!body)return;send.disabled=true;try{const r=await db.from('socialbase_feed_comments').insert({post_id:p.id,author_id:S.user.id,body});if(r.error)throw r.error;input.value='';await loadComments()}catch(e){msg(e)}finally{send.disabled=false}};el('sbFeedItems').append(card)}if(data.length<10)el('sbMorePosts').hidden=true}catch(e){msg(e)}finally{setBusy(false)}}
+document.addEventListener('socialbase:feed-ready',()=>load(true));setInterval(()=>{const v=el('view-feed');if(S.user&&v&&!v.classList.contains('hidden')&&window.scrollY<250&&!loading)load(true)},60000);el('sbPublish').onclick=publish;el('sbMorePosts').onclick=()=>load();document.querySelectorAll('[data-sb-filter]').forEach(b=>b.onclick=()=>{filter=b.dataset.sbFilter;document.querySelectorAll('[data-sb-filter]').forEach(x=>x.classList.toggle('selected',x===b));load(true)});
+const nav=document.querySelector('#tabs [data-tab="feed"]');nav.onclick=()=>{tab('feed');load(true)};
+})();
+</script>
+<script>
+/* Salas de Voz: diretório seguro no Supabase. Áudio requer serviço WebRTC separado. */
+(()=>{
+const q=id=>document.getElementById(id);let active=null;
+function status(t){const el=q('sbVoiceRooms');if(el)el.textContent=t}
+async function refresh(){if(typeof S==='undefined'||!S.db||!S.user)return;const {data,error}=await S.db.from('socialbase_voice_rooms').select('id,title,is_private,created_at').eq('is_open',true).eq('is_private',false).order('created_at',{ascending:false}).limit(30);if(error){status('Salas indisponíveis: execute o SQL das salas.');return}const root=q('sbVoiceRooms');root.replaceChildren();if(!data.length){status('Nenhuma sala pública no momento.');return}for(const r of data){const box=document.createElement('div');box.className='sb-room';const name=document.createElement('strong');name.textContent=r.title;const button=document.createElement('button');button.className='secondary';button.textContent='Ver sala';button.onclick=()=>openRoom(r);box.append(name,button);root.append(box)}}
+function openRoom(r){active=r;q('sbVoiceActive').classList.remove('hidden');q('sbVoiceTitle').textContent=r.title;q('sbVoiceParticipants').textContent='';q('sbVoiceNotice').textContent='Prévia da sala. A transmissão de voz ainda depende da integração com um servidor de áudio (SFU) e tokens seguros. Nenhum microfone está sendo capturado.'}
+q('sbVoiceCreate')?.addEventListener('click',async()=>{if(typeof S==='undefined'||!S.db||!S.user){alert('Entre na sua conta.');return}const title=prompt('Nome da sala (até 60 caracteres):');if(!title?.trim())return;const privateRoom=confirm('Sala privada? OK = privada, Cancelar = pública');const {data,error}=await S.db.from('socialbase_voice_rooms').insert({owner_id:S.user.id,title:title.trim().slice(0,60),is_private:privateRoom}).select('id,title,is_private').single();if(error){alert(error.message);return}openRoom(data);refresh()});
+q('sbVoiceRefresh')?.addEventListener('click',refresh);q('sbVoiceLeave')?.addEventListener('click',()=>{active=null;q('sbVoiceActive').classList.add('hidden')});q('sbVoiceInvite')?.addEventListener('click',()=>{if(!active)return;const link=location.origin+location.pathname+'#sala='+encodeURIComponent(active.id);if(navigator.share)navigator.share({title:active.title,url:link}).catch(()=>{});else navigator.clipboard?.writeText(link).then(()=>alert('Link copiado. O ingresso por convite será ativado com a integração de áudio.'))});
+const nav=document.querySelector('[data-tab="voz"]');nav?.addEventListener('click',()=>{document.querySelectorAll('#tabs button').forEach(x=>x.classList.remove('active'));nav.classList.add('active');document.querySelectorAll('#app .view').forEach(x=>x.classList.add('hidden'));q('view-voz').classList.remove('hidden');refresh()});
+})();
+</script>
+<dialog id="sbMomentDialog"><div class="row between"><strong id="sbMomentWho">Momento</strong><button type="button" id="sbMomentClose" class="secondary">Fechar ✕</button></div><img id="sbMomentPhoto" alt="Foto do Momento"><p id="sbMomentTime" class="muted"></p><button id="sbMomentDelete" type="button" class="danger" hidden>Apagar meu Momento</button></dialog>
+<script>
+/* Momentos: fotos com expiração de visibilidade em dez minutos. */
+(()=>{
+const $m=id=>document.getElementById(id);let current=null;
+function ready(){return typeof S!=='undefined'&&S.user&&S.db}
+async function shrink(file){if(!['image/jpeg','image/png','image/webp'].includes(file.type)||file.size>5*1024*1024)throw Error('Envie JPG, PNG ou WebP de até 5 MB.');const bmp=await createImageBitmap(file);try{const k=Math.min(1,1000/Math.max(bmp.width,bmp.height));const c=document.createElement('canvas');c.width=Math.max(1,Math.round(bmp.width*k));c.height=Math.max(1,Math.round(bmp.height*k));c.getContext('2d').drawImage(bmp,0,0,c.width,c.height);return await new Promise((resolve,reject)=>c.toBlob(b=>b?resolve(b):reject(Error('Falha ao comprimir foto')),'image/webp',.78))}finally{bmp.close()}}
+function notice(e){if(typeof message==='function')message(e.message||String(e),true);else alert(e.message||String(e))}
+async function load(){const strip=$m('sbMomentStrip');if(!ready()){strip.textContent='Entre na sua conta para ver Momentos.';return}try{const now=new Date().toISOString();const {data,error}=await S.db.from('socialbase_moments').select('id,user_id,image_path,created_at,expires_at').gt('expires_at',now).order('created_at',{ascending:false}).limit(60);if(error)throw error;strip.replaceChildren();const add=document.createElement('button');add.type='button';add.className='sb-moment-item';add.innerHTML='<span class="sb-moment-add">＋</span><small>Meu Momento</small>';add.onclick=()=>$m('sbMomentInput').click();strip.append(add);if(!data?.length){const empty=document.createElement('span');empty.className='muted';empty.textContent='Nenhum Momento ativo.';strip.append(empty);return}const ids=[...new Set(data.map(x=>x.user_id))];const {data:profiles}=await S.db.from('profiles').select('id,display_name,avatar_url').in('id',ids);const names=new Map((profiles||[]).map(p=>[p.id,p]));for(const row of data){const profile=names.get(row.user_id);const {data:signed,error:signError}=await S.db.storage.from('socialbase-moments').createSignedUrl(row.image_path,60);if(signError||!signed?.signedUrl)continue;const b=document.createElement('button');b.type='button';b.className='sb-moment-item';const im=document.createElement('img');im.src=profile?.avatar_url||signed.signedUrl;im.alt='Momento de '+(profile?.display_name||'usuário');const label=document.createElement('small');label.textContent=profile?.display_name||'Usuário';b.append(im,label);b.onclick=async()=>{if(Date.parse(row.expires_at)<=Date.now()){load();return}const {data:fresh,error:err}=await S.db.storage.from('socialbase-moments').createSignedUrl(row.image_path,60);if(err){notice(err);return}current=row;$m('sbMomentPhoto').src=fresh.signedUrl;$m('sbMomentWho').textContent=profile?.display_name||'Momento';$m('sbMomentTime').textContent='Disponível até '+new Date(row.expires_at).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});$m('sbMomentDelete').hidden=row.user_id!==S.user.id;$m('sbMomentDialog').showModal()};strip.append(b)}}catch(e){strip.textContent='Momentos indisponíveis: '+(e?.message||String(e))+'. Execute MOMENTOS_SUPABASE.sql no Supabase se ainda não executou.';console.warn(e)}}
+$m('sbMomentInput').addEventListener('change',async e=>{const file=e.target.files?.[0];if(!file||!ready())return;let path;try{const blob=await shrink(file);path=S.user.id+'/'+crypto.randomUUID()+'.webp';const up=await S.db.storage.from('socialbase-moments').upload(path,blob,{contentType:'image/webp',upsert:false});if(up.error)throw up.error;const result=await S.db.from('socialbase_moments').insert({user_id:S.user.id,image_path:path});if(result.error)throw result.error;await load()}catch(err){if(path)await S.db.storage.from('socialbase-moments').remove([path]);notice(err)}finally{e.target.value=''}});
+$m('sbMomentRefresh').onclick=load;$m('sbMomentClose').onclick=()=>$m('sbMomentDialog').close();$m('sbMomentDelete').onclick=async()=>{if(!current||current.user_id!==S.user?.id)return;const r=await S.db.from('socialbase_moments').delete().eq('id',current.id).eq('user_id',S.user.id);if(r.error)return notice(r.error);await S.db.storage.from('socialbase-moments').remove([current.image_path]);$m('sbMomentDialog').close();load()};
+document.querySelector('[data-tab="feed"]')?.addEventListener('click',()=>setTimeout(load,200));document.addEventListener('socialbase:feed-ready',load);setInterval(()=>{if(ready()&&!$m('view-feed').classList.contains('hidden'))load()},30000);setTimeout(load,1400);
+})();
+</script>
+</body>
+</html>
